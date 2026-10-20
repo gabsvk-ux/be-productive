@@ -29,11 +29,52 @@ public sealed class SqliteStoreTests : IDisposable
     public void Opening_an_existing_database_keeps_its_data()
     {
         var first = new SqliteStore(directory.AppPaths);
-        first.SavePreset(new Preset { Id = "reading", Name = "Reading" }, sort: 10);
+        first.SavePreset(new Preset { Id = "reading", Name = "Reading" });
 
         var second = new SqliteStore(directory.AppPaths);
 
         Assert.Equal(4, second.All().Count);
+    }
+
+    [Fact]
+    public void Updating_a_preset_keeps_its_place_and_new_ones_go_last()
+    {
+        var store = new SqliteStore(directory.AppPaths);
+
+        store.SavePreset(new Preset { Id = "uni", Name = "University" });
+        store.SavePreset(new Preset { Id = "reading", Name = "Reading" });
+
+        Assert.Equal(["uni", "projects", "programming", "reading"], store.All().Select(preset => preset.Id));
+        Assert.Equal("University", store.Find("uni")!.Name);
+    }
+
+    [Fact]
+    public void Pending_changes_replace_each_other_per_target()
+    {
+        var store = new SqliteStore(directory.AppPaths);
+        var tomorrow = new DateOnly(2026, 10, 21);
+
+        store.SavePending(new PendingChange(PendingChangeKinds.Preset, "uni", tomorrow, "allow Steam.exe", "{}"));
+        store.SavePending(new PendingChange(PendingChangeKinds.Preset, "uni", tomorrow, "allow Discord.exe", "{}"));
+        store.SavePending(new PendingChange(PendingChangeKinds.Minimums, "", tomorrow, "lower minimums", "{}"));
+
+        Assert.Equal(2, store.PendingChanges().Count);
+        Assert.Contains(store.PendingChanges(), change => change.Description == "allow Discord.exe");
+
+        store.DeletePending(PendingChangeKinds.Preset, "uni");
+        Assert.Equal(PendingChangeKinds.Minimums, Assert.Single(store.PendingChanges()).Kind);
+    }
+
+    [Fact]
+    public void Minimums_are_stored_once_edited()
+    {
+        var store = new SqliteStore(directory.AppPaths);
+        Assert.Null(store.LoadMinimums());
+
+        store.SaveMinimums(new WeekdayMinimums { Sunday = 0 });
+
+        Assert.Equal(0, store.LoadMinimums()!.Sunday);
+        Assert.Equal(100, store.LoadMinimums()!.Monday);
     }
 
     [Fact]

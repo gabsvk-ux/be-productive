@@ -69,7 +69,7 @@ public static partial class HostsSection
         return kept.Count == 0 ? "" : string.Join(newline, kept) + newline;
     }
 
-    private static bool IsValidDomain(string domain) => domain.Length <= 253 && DomainPattern().IsMatch(domain);
+    public static bool IsValidDomain(string domain) => domain.Length <= 253 && DomainPattern().IsMatch(domain);
 
     private static string NewlineOf(string content) =>
         content.Contains('\n') && !content.Contains("\r\n") ? "\n" : "\r\n";

@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<SqliteStore>();
         services.AddSingleton<ISessionStore>(provider => provider.GetRequiredService<SqliteStore>());
-        services.AddSingleton<IPresetStore>(provider => provider.GetRequiredService<SqliteStore>());
+        services.AddSingleton<IRulesStore>(provider => provider.GetRequiredService<SqliteStore>());
         services.AddSingleton<SessionService>();
         return services;
     }

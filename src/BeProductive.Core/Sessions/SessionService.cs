@@ -11,7 +11,7 @@ namespace BeProductive.Core.Sessions;
 /// </summary>
 public sealed class SessionService(
     ISessionStore store,
-    IPresetStore presets,
+    IRulesStore rules,
     RecoveryCodeService recoveryCodes,
     IOptions<SessionOptions> options,
     TimeProvider time,
@@ -20,6 +20,7 @@ public sealed class SessionService(
     private static readonly TimeSpan CheckpointInterval = TimeSpan.FromSeconds(15);
 
     private readonly SemaphoreSlim sync = new(1, 1);
+    private readonly RuleEditor editor = new(rules, options.Value);
     private SessionEngine? engine;
     private int savedRevision = -1;
     private DateTimeOffset savedAt;
@@ -30,8 +31,7 @@ public sealed class SessionService(
         try
         {
             var now = time.GetUtcNow();
-            var current = Engine(now);
-            current.Tick(now);
+            var current = Prepare(now);
             Save(current, now);
         }
         finally
@@ -47,8 +47,7 @@ public sealed class SessionService(
         try
         {
             var now = time.GetUtcNow();
-            current = Engine(now);
-            current.Tick(now);
+            current = Prepare(now);
 
             string? message = null;
             switch (request)
@@ -56,7 +55,19 @@ public sealed class SessionService(
                 case StatusRequest:
                     break;
                 case PresetsRequest:
-                    return new IpcResponse(true, null, current.Snapshot(now), presets.All());
+                    return new IpcResponse(true, null, current.Snapshot(now), rules.All());
+                case SettingsRequest:
+                    return new IpcResponse(true, null, current.Snapshot(now), Settings: Settings());
+                case SavePresetRequest savePreset:
+                    message = editor.SavePreset(savePreset.Preset, current.State.Day);
+                    return new IpcResponse(true, null, current.Snapshot(now), Message: message, Settings: Settings());
+                case DeletePresetRequest deletePreset:
+                    message = editor.DeletePreset(deletePreset.PresetId, PresetInUse(current));
+                    return new IpcResponse(true, null, current.Snapshot(now), Message: message, Settings: Settings());
+                case SaveMinimumsRequest saveMinimums:
+                    (message, var todaysMinimum) = editor.SaveMinimums(saveMinimums.Minimums, current.State.Day);
+                    current.RaiseTodaysMinimum(todaysMinimum);
+                    return new IpcResponse(true, null, current.Snapshot(now), Message: message, Settings: Settings());
                 case PlanRequest plan:
                     current.Plan(now, plan.PresetId, plan.Minutes, plan.Block, plan.Note);
                     break;
@@ -130,6 +141,32 @@ public sealed class SessionService(
         return message;
     }
 
+    /// <summary>Applies rule changes that have become due, then brings the engine up to date.</summary>
+    private SessionEngine Prepare(DateTimeOffset now)
+    {
+        editor.ApplyDue(SessionEngine.DayOf(now, options.Value, time.LocalTimeZone));
+        var current = Engine(now);
+        current.Tick(now);
+        return current;
+    }
+
+    private SettingsSnapshot Settings() =>
+        new(
+            rules.All(),
+            editor.Minimums,
+            rules.PendingChanges().Select(change => new PendingRuleChange(
+                change.Kind,
+                change.Target,
+                change.EffectiveOn,
+                change.Description,
+                change.Kind == PendingChangeKinds.Preset ? IpcProtocol.Deserialize<Preset>(change.Data) : null,
+                change.Kind == PendingChangeKinds.Minimums ? IpcProtocol.Deserialize<WeekdayMinimums>(change.Data) : null))
+            .ToList());
+
+    /// <summary>The preset today's lock depends on, which mustn't be deleted mid-day.</summary>
+    private static string? PresetInUse(SessionEngine current) =>
+        current.State.Block?.PresetId ?? (current.AdminToolsBlocked ? current.State.PresetId : null);
+
     private SessionEngine Engine(DateTimeOffset now)
     {
         if (engine is not null)
@@ -147,7 +184,7 @@ public sealed class SessionService(
             saved = null;
         }
 
-        engine = new SessionEngine(options.Value, time.LocalTimeZone, store, presets, saved, now);
+        engine = new SessionEngine(options.Value, time.LocalTimeZone, store, rules, saved, now);
         return engine;
     }
 

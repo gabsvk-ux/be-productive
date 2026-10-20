@@ -18,6 +18,10 @@ namespace BeProductive.Core.Ipc;
 [JsonDerivedType(typeof(ExtendRequest), "extend")]
 [JsonDerivedType(typeof(StopExtraRequest), "stop-extra")]
 [JsonDerivedType(typeof(RecoveryExitRequest), "recovery-exit")]
+[JsonDerivedType(typeof(SettingsRequest), "settings")]
+[JsonDerivedType(typeof(SavePresetRequest), "save-preset")]
+[JsonDerivedType(typeof(DeletePresetRequest), "delete-preset")]
+[JsonDerivedType(typeof(SaveMinimumsRequest), "save-minimums")]
 public abstract record IpcRequest;
 
 public sealed record StatusRequest : IpcRequest;
@@ -42,6 +46,31 @@ public sealed record StopExtraRequest : IpcRequest;
 
 public sealed record RecoveryExitRequest(string Code) : IpcRequest;
 
+public sealed record SettingsRequest : IpcRequest;
+
+/// <summary>Saves a preset; an empty id creates a new one.</summary>
+public sealed record SavePresetRequest(Preset Preset) : IpcRequest;
+
+public sealed record DeletePresetRequest(string PresetId) : IpcRequest;
+
+public sealed record SaveMinimumsRequest(WeekdayMinimums Minimums) : IpcRequest;
+
+/// <summary>The rules in force now, and the loosening changes waiting for the next day.</summary>
+public sealed record SettingsSnapshot(
+    IReadOnlyList<Preset> Presets,
+    WeekdayMinimums Minimums,
+    IReadOnlyList<PendingRuleChange> Pending);
+
+/// <param name="Preset">For a preset change: the preset as it will be.</param>
+/// <param name="Minimums">For a minimums change: the minimums as they will be.</param>
+public sealed record PendingRuleChange(
+    string Kind,
+    string Target,
+    DateOnly EffectiveOn,
+    string Description,
+    Preset? Preset,
+    WeekdayMinimums? Minimums);
+
 /// <param name="Error">Why the command was refused, ready to show to the user.</param>
 /// <param name="Message">Anything else worth telling the user, such as how many recovery codes are left.</param>
 public sealed record IpcResponse(
@@ -49,7 +78,8 @@ public sealed record IpcResponse(
     string? Error,
     SessionStatus? Status,
     IReadOnlyList<Preset>? Presets = null,
-    string? Message = null);
+    string? Message = null,
+    SettingsSnapshot? Settings = null);
 
 public sealed class ServiceUnavailableException(string message) : Exception(message);
 

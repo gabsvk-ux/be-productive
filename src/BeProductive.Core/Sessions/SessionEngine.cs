@@ -18,14 +18,14 @@ public sealed class SessionEngine
     private readonly SessionOptions options;
     private readonly TimeZoneInfo zone;
     private readonly ISessionStore store;
-    private readonly IPresetStore presets;
+    private readonly IRulesStore rules;
 
-    public SessionEngine(SessionOptions options, TimeZoneInfo zone, ISessionStore store, IPresetStore presets, SessionState? saved, DateTimeOffset now)
+    public SessionEngine(SessionOptions options, TimeZoneInfo zone, ISessionStore store, IRulesStore rules, SessionState? saved, DateTimeOffset now)
     {
         this.options = options;
         this.zone = zone;
         this.store = store;
-        this.presets = presets;
+        this.rules = rules;
         State = saved ?? NewDay(DayOf(now), now);
         Tick(now);
     }
@@ -180,6 +180,23 @@ public sealed class SessionEngine
         BecomeFree();
     }
 
+    /// <summary>
+    /// A raised minimum counts today too, as long as today hasn't been planned yet.
+    /// Days without a minimum stay free: a settings change shouldn't lock the laptop on the spot.
+    /// </summary>
+    public void RaiseTodaysMinimum(int minutes)
+    {
+        if (State.Outcome != DayOutcome.Open || State.Phase is not (Phase.Gate or Phase.Postponed) || minutes <= State.MinimumMinutes)
+            return;
+        State.MinimumMinutes = minutes;
+        SaveDay();
+        Changed();
+    }
+
+    /// <summary>The day a moment belongs to: days start at <see cref="SessionOptions.DayStartsAt"/>, not at midnight.</summary>
+    public static DateOnly DayOf(DateTimeOffset now, SessionOptions options, TimeZoneInfo zone) =>
+        DateOnly.FromDateTime((TimeZoneInfo.ConvertTime(now, zone) - options.DayStartsAt).DateTime);
+
     /// <summary>Throws unless there's a lock a recovery code could end, so a code isn't used up for nothing.</summary>
     public void EnsureRecoveryExitPossible() =>
         Require(AdminToolsBlocked, "Nothing is locked right now, so no recovery code is needed.");
@@ -216,7 +233,7 @@ public sealed class SessionEngine
             Restriction,
             AdminToolsBlocked,
             State.PresetId,
-            State.PresetId is null ? null : presets.Find(State.PresetId)?.Name,
+            State.PresetId is null ? null : rules.Find(State.PresetId)?.Name,
             State.MinimumMinutes,
             State.BindingMinutes,
             State.ExtraMinutes,
@@ -367,7 +384,7 @@ public sealed class SessionEngine
 
     private SessionState NewDay(DateOnly day, DateTimeOffset now)
     {
-        var minimum = options.MinimumMinutes.For(day.DayOfWeek);
+        var minimum = (rules.LoadMinimums() ?? options.MinimumMinutes).For(day.DayOfWeek);
         return new SessionState
         {
             Day = day,
@@ -389,8 +406,7 @@ public sealed class SessionEngine
         return LocalTime(State.Day.AddDays(-daysSinceMonday), options.DayStartsAt);
     }
 
-    private DateOnly DayOf(DateTimeOffset now) =>
-        DateOnly.FromDateTime((TimeZoneInfo.ConvertTime(now, zone) - options.DayStartsAt).DateTime);
+    private DateOnly DayOf(DateTimeOffset now) => DayOf(now, options, zone);
 
     private DateTimeOffset LocalTime(DateOnly day, TimeSpan timeOfDay)
     {
@@ -399,10 +415,10 @@ public sealed class SessionEngine
     }
 
     private BlockKind DefaultBlock() =>
-        State.PresetId is null ? BlockKind.Classic25 : presets.Find(State.PresetId)?.DefaultBlock ?? BlockKind.Classic25;
+        State.PresetId is null ? BlockKind.Classic25 : rules.Find(State.PresetId)?.DefaultBlock ?? BlockKind.Classic25;
 
     private void RequirePreset(string presetId) =>
-        Require(presets.Find(presetId) is not null, $"There's no preset called '{presetId}'.");
+        Require(rules.Find(presetId) is not null, $"There's no preset called '{presetId}'.");
 
     private void SaveDay() =>
         store.SaveDay(new DayRecord(

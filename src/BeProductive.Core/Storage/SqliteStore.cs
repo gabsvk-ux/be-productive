@@ -9,9 +9,10 @@ namespace BeProductive.Core.Storage;
 /// The app's database: presets, the session state and the tracking records (days, blocks, events).
 /// Only the service writes to it. Times are stored as UTC ISO 8601 text, so they sort as text.
 /// </summary>
-public sealed class SqliteStore : ISessionStore, IPresetStore
+public sealed class SqliteStore : ISessionStore, IRulesStore
 {
     private const string StateKey = "session";
+    private const string MinimumsKey = "minimums";
 
     private static readonly string[] Migrations =
     [
@@ -56,6 +57,16 @@ public sealed class SqliteStore : ISessionStore, IPresetStore
             value TEXT NOT NULL
         );
         """,
+        """
+        CREATE TABLE pending_changes (
+            kind TEXT NOT NULL,
+            target TEXT NOT NULL,
+            effective_on TEXT NOT NULL,
+            description TEXT NOT NULL,
+            data TEXT NOT NULL,
+            PRIMARY KEY (kind, target)
+        );
+        """,
     ];
 
     private readonly string connectionString;
@@ -88,42 +99,86 @@ public sealed class SqliteStore : ISessionStore, IPresetStore
         return command.ExecuteScalar() is string data ? Deserialize<Preset>(data) : null;
     }
 
-    public void SavePreset(Preset preset, int sort)
+    /// <summary>Adds a preset at the end of the list, or updates it in place.</summary>
+    public void SavePreset(Preset preset)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT INTO presets (id, name, sort, data) VALUES ($id, $name, $sort, $data)
-            ON CONFLICT (id) DO UPDATE SET name = excluded.name, sort = excluded.sort, data = excluded.data
+            INSERT INTO presets (id, name, sort, data)
+            VALUES ($id, $name, (SELECT COALESCE(MAX(sort), -1) + 1 FROM presets), $data)
+            ON CONFLICT (id) DO UPDATE SET name = excluded.name, data = excluded.data
             """;
         command.Parameters.AddWithValue("$id", preset.Id);
         command.Parameters.AddWithValue("$name", preset.Name);
-        command.Parameters.AddWithValue("$sort", sort);
         command.Parameters.AddWithValue("$data", JsonSerializer.Serialize(preset, Json.Options));
         command.ExecuteNonQuery();
     }
 
-    public SessionState? LoadState()
+    public void DeletePreset(string id)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT value FROM state WHERE key = $key";
-        command.Parameters.AddWithValue("$key", StateKey);
-        return command.ExecuteScalar() is string value ? Deserialize<SessionState>(value) : null;
+        command.CommandText = "DELETE FROM presets WHERE id = $id";
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
     }
 
-    public void SaveState(SessionState state)
+    public WeekdayMinimums? LoadMinimums() => LoadValue<WeekdayMinimums>(MinimumsKey);
+
+    public void SaveMinimums(WeekdayMinimums minimums) => SaveValue(MinimumsKey, minimums);
+
+    public IReadOnlyList<PendingChange> PendingChanges()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT kind, target, effective_on, description, data FROM pending_changes ORDER BY effective_on, kind, target";
+        using var reader = command.ExecuteReader();
+        var changes = new List<PendingChange>();
+        while (reader.Read())
+        {
+            changes.Add(new PendingChange(
+                reader.GetString(0),
+                reader.GetString(1),
+                DateOnly.ParseExact(reader.GetString(2), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+                reader.GetString(3),
+                reader.GetString(4)));
+        }
+
+        return changes;
+    }
+
+    public void SavePending(PendingChange change)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT INTO state (key, value) VALUES ($key, $value)
-            ON CONFLICT (key) DO UPDATE SET value = excluded.value
+            INSERT INTO pending_changes (kind, target, effective_on, description, data)
+            VALUES ($kind, $target, $effective, $description, $data)
+            ON CONFLICT (kind, target) DO UPDATE SET
+                effective_on = excluded.effective_on, description = excluded.description, data = excluded.data
             """;
-        command.Parameters.AddWithValue("$key", StateKey);
-        command.Parameters.AddWithValue("$value", JsonSerializer.Serialize(state, Json.Options));
+        command.Parameters.AddWithValue("$kind", change.Kind);
+        command.Parameters.AddWithValue("$target", change.Target);
+        command.Parameters.AddWithValue("$effective", DayText(change.EffectiveOn));
+        command.Parameters.AddWithValue("$description", change.Description);
+        command.Parameters.AddWithValue("$data", change.Data);
         command.ExecuteNonQuery();
     }
+
+    public void DeletePending(string kind, string target)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM pending_changes WHERE kind = $kind AND target = $target";
+        command.Parameters.AddWithValue("$kind", kind);
+        command.Parameters.AddWithValue("$target", target);
+        command.ExecuteNonQuery();
+    }
+
+    public SessionState? LoadState() => LoadValue<SessionState>(StateKey);
+
+    public void SaveState(SessionState state) => SaveValue(StateKey, state);
 
     public void RecordBlock(BlockRecord block)
     {
@@ -191,6 +246,29 @@ public sealed class SqliteStore : ISessionStore, IPresetStore
         return Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture);
     }
 
+    private T? LoadValue<T>(string key)
+        where T : class
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT value FROM state WHERE key = $key";
+        command.Parameters.AddWithValue("$key", key);
+        return command.ExecuteScalar() is string value ? Deserialize<T>(value) : null;
+    }
+
+    private void SaveValue<T>(string key, T value)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO state (key, value) VALUES ($key, $value)
+            ON CONFLICT (key) DO UPDATE SET value = excluded.value
+            """;
+        command.Parameters.AddWithValue("$key", key);
+        command.Parameters.AddWithValue("$value", JsonSerializer.Serialize(value, Json.Options));
+        command.ExecuteNonQuery();
+    }
+
     private void Migrate()
     {
         using var connection = Open();
@@ -227,10 +305,10 @@ public sealed class SqliteStore : ISessionStore, IPresetStore
         {
             new Preset { Id = "uni", Name = "Uni studying", AllowedApps = ["chrome.exe", "WINWORD.EXE", "Acrobat.exe"], DefaultBlock = BlockKind.Classic25 },
             new Preset { Id = "projects", Name = "Projects", AllowedApps = ["chrome.exe"], DefaultBlock = BlockKind.Long45 },
-            new Preset { Id = "programming", Name = "Programming", AllowedApps = ["chrome.exe", "Code.exe"], DefaultBlock = BlockKind.Long45 },
+            new Preset { Id = "programming", Name = "Programming", AllowedApps = ["chrome.exe", "Code.exe"], DefaultBlock = BlockKind.Long45, AllowTerminal = true },
         };
-        for (var i = 0; i < defaults.Length; i++)
-            SavePreset(defaults[i], i);
+        foreach (var preset in defaults)
+            SavePreset(preset);
     }
 
     private SqliteConnection Open()

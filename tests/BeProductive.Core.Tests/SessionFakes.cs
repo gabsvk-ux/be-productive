@@ -2,13 +2,17 @@ using BeProductive.Core.Sessions;
 
 namespace BeProductive.Core.Tests;
 
-internal sealed class InMemorySessionStore : ISessionStore, IPresetStore
+internal sealed class InMemorySessionStore : ISessionStore, IRulesStore
 {
+    private readonly Dictionary<(string Kind, string Target), PendingChange> pending = [];
+
     public List<Preset> Presets { get; } =
     [
         new() { Id = "uni", Name = "Uni studying", DefaultBlock = BlockKind.Classic25 },
         new() { Id = "programming", Name = "Programming", DefaultBlock = BlockKind.Long45 },
     ];
+
+    public WeekdayMinimums? Minimums { get; set; }
 
     public SessionState? State { get; private set; }
 
@@ -21,6 +25,27 @@ internal sealed class InMemorySessionStore : ISessionStore, IPresetStore
     public IReadOnlyList<Preset> All() => Presets;
 
     public Preset? Find(string id) => Presets.FirstOrDefault(preset => preset.Id == id);
+
+    public void SavePreset(Preset preset)
+    {
+        var index = Presets.FindIndex(existing => existing.Id == preset.Id);
+        if (index >= 0)
+            Presets[index] = preset;
+        else
+            Presets.Add(preset);
+    }
+
+    public void DeletePreset(string id) => Presets.RemoveAll(preset => preset.Id == id);
+
+    public WeekdayMinimums? LoadMinimums() => Minimums;
+
+    public void SaveMinimums(WeekdayMinimums minimums) => Minimums = minimums;
+
+    public IReadOnlyList<PendingChange> PendingChanges() => pending.Values.OrderBy(change => change.EffectiveOn).ToList();
+
+    public void SavePending(PendingChange change) => pending[(change.Kind, change.Target)] = change;
+
+    public void DeletePending(string kind, string target) => pending.Remove((kind, target));
 
     public SessionState? LoadState() => State;
 
