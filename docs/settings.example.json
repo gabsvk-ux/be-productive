@@ -1,0 +1,16 @@
+{
+  "Enforcement": {
+    "DryRun": true,
+    "PanicFileEnabled": true
+  },
+  "Recovery": {
+    "CodeCount": 10,
+    "PromptThreshold": 3
+  },
+  "RecoveryDelivery": {
+    "Provider": "Resend",
+    "ApiKey": "re_your_sending_only_key",
+    "From": "Be Productive <codes@your-verified-domain.com>",
+    "To": "friend@example.com"
+  }
+}

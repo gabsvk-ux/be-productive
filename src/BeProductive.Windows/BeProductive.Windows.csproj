@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\BeProductive.Core\BeProductive.Core.csproj" />
+  </ItemGroup>
+
+</Project>

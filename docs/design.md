@@ -81,7 +81,8 @@ Admin tools (Task Manager, cmd, PowerShell, Terminal, regedit, Services/MMC) are
 
 ## 7. Safety net (built before any enforcement)
 
-- **Dev mode:** only logs what it *would* kill or block. A **panic file** turns off all enforcement while dev mode is on.
+- **Dry-run mode** (on by default) only logs what it *would* kill or block.
+- **Panic file:** in development builds, creating `C:\ProgramData\BeProductive\PANIC` switches off live enforcement and undoes everything within 30 s.
 - All policies are tied to a session with an expiry time and **always removed** when the service stops, a session expires or the app is uninstalled.
 - A `restore.ps1` script, run as admin, undoes everything. Keep a copy on a USB stick.
 - **Safe Mode** stays a working escape (the service isn't registered to run there).
