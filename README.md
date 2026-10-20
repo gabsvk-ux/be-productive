@@ -7,7 +7,7 @@ A personal focus app for Windows: until you've done your daily focus time, the l
 - the session engine (gate, pomodoro blocks, breaks, tracking)
 - the desktop app: start screen, dashboard, next-block prompt, notifications, settings, stats and tray icon
 
-Nothing is blocked yet: the service works out what *should* be locked, but the enforcement layer (build steps 4 and 6) isn't built. That layer is being done by a third party — see **[docs/handoff-enforcement.md](docs/handoff-enforcement.md)** for what it must do and how it plugs into everything here.
+Enforcement (step 4) is built: during focus the service kills programs that aren't allowed, blocks the distraction domains in the hosts file, and sets the Chrome and admin-tool policies — all through the step-1 safety net, and **off by default** (`Enforcement:DryRun` is `true`, so it only logs until you turn it on). The remaining step is the tamper-resistance layer (step 6, self-protection, watchdog, uninstall lock), described for a third party in **[docs/handoff-enforcement.md](docs/handoff-enforcement.md)**.
 
 ## Layout
 

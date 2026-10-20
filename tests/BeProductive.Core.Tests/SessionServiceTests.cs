@@ -1,3 +1,4 @@
+using BeProductive.Core.Enforcement;
 using BeProductive.Core.Ipc;
 using BeProductive.Core.Recovery;
 using BeProductive.Core.Sessions;
@@ -24,7 +25,7 @@ public sealed class SessionServiceTests : IDisposable
             Options.Create(new RecoveryOptions()),
             time,
             NullLogger<RecoveryCodeService>.Instance);
-        service = new SessionService(store, store, codes, Options.Create(new SessionOptions()), time, NullLogger<SessionService>.Instance);
+        service = new SessionService(store, store, codes, new NoOpEnforcer(), Options.Create(new SessionOptions()), time, NullLogger<SessionService>.Instance);
     }
 
     public void Dispose() => directory.Dispose();

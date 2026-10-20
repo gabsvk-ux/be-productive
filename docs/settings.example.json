@@ -1,7 +1,16 @@
 {
   "Enforcement": {
     "DryRun": true,
-    "PanicFileEnabled": true
+    "PanicFileEnabled": true,
+    "BrowserApp": "chrome",
+    "ReassertInterval": "00:00:20",
+    "GlobalBlockedDomains": [
+      "youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be",
+      "reddit.com", "instagram.com", "tiktok.com", "x.com", "twitter.com",
+      "facebook.com", "netflix.com", "twitch.tv"
+    ],
+    "AlwaysAllowedApps": [ "BeProductive", "SystemSettings", "Calculator", "SnippingTool", "Notepad" ],
+    "TerminalApps": [ "WindowsTerminal", "powershell", "pwsh", "cmd", "conhost" ]
   },
   "Sessions": {
     "DayStartsAt": "04:00:00",

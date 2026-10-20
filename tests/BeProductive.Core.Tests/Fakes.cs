@@ -75,9 +75,15 @@ internal sealed class FakeHostsFile(string content) : IHostsFile
 {
     public string Content { get; set; } = content;
 
+    public int Writes { get; private set; }
+
     public string Read() => Content;
 
-    public void Write(string content) => Content = content;
+    public void Write(string content)
+    {
+        Content = content;
+        Writes++;
+    }
 }
 
 internal sealed class FakeDnsCache : IDnsCache

@@ -14,7 +14,7 @@ internal static class StatsPrinter
         Console.WriteLine($"Focus:     {Hours(total)} in total, {Hours(total / Math.Max(1, stats.Days.Count))} a day on average");
         Console.WriteLine($"On target: {onTarget} of {withGoal.Count} day(s) with a minimum");
         Console.WriteLine($"Streak:    {stats.CurrentStreak} day(s) now, best {stats.BestStreak}");
-        Console.WriteLine($"Also:      {stats.Pauses} pause(s), {stats.Postpones} postpone(s), {stats.RecoveryExits} recovery exit(s)");
+        Console.WriteLine($"Also:      {stats.Pauses} pause(s), {stats.Postpones} postpone(s), {stats.RecoveryExits} recovery exit(s), {stats.BlockedApps} blocked app(s)");
 
         Console.WriteLine();
         foreach (var day in stats.Days)

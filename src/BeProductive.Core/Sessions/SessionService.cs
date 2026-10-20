@@ -13,6 +13,7 @@ public sealed class SessionService(
     ISessionStore store,
     IRulesStore rules,
     RecoveryCodeService recoveryCodes,
+    Enforcement.IEnforcer enforcer,
     IOptions<SessionOptions> options,
     TimeProvider time,
     ILogger<SessionService> logger)
@@ -32,6 +33,7 @@ public sealed class SessionService(
         {
             var now = time.GetUtcNow();
             var current = Prepare(now);
+            enforcer.Apply(current.Snapshot(now), now);
             Save(current, now);
         }
         finally
@@ -113,7 +115,12 @@ public sealed class SessionService(
         finally
         {
             if (current is not null)
-                Save(current, time.GetUtcNow());
+            {
+                var now = time.GetUtcNow();
+                enforcer.Apply(current.Snapshot(now), now);
+                Save(current, now);
+            }
+
             sync.Release();
         }
     }

@@ -39,7 +39,7 @@ public class StatsTests
                 new("programming", "Programming", total * 30 / 100, 12),
                 new("projects", "Projects", total * 15 / 100, 6),
             ],
-            CurrentStreak: 3, BestStreak: 9, Pauses: 4, Postpones: 2, RecoveryExits: 1);
+            CurrentStreak: 3, BestStreak: 9, Pauses: 4, Postpones: 2, RecoveryExits: 1, BlockedApps: 23);
     }
 
     private static async Task<StatsViewModel> OpenAsync()

@@ -146,7 +146,24 @@ if (Test-Path -LiteralPath $journalPath) {
 Write-Step 'Checking the hosts file'
 Remove-HostsSection
 
-# 4. DNS
+# 4. The policies, as a backstop if the journal was lost. Deleting a policy value just removes the
+#    restriction; it does not change any real setting, so this is always safe even with no journal.
+Write-Step 'Clearing Be Productive policy values (backstop)'
+$chrome = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome'
+foreach ($name in 'DnsOverHttpsMode', 'IncognitoModeAvailability', 'DeveloperToolsAvailability') {
+    if (Test-Path -LiteralPath $chrome) { Remove-ItemProperty -LiteralPath $chrome -Name $name -ErrorAction SilentlyContinue }
+}
+# Admin-tool policies live in the signed-in user's hive. Clear them for every loaded user hive.
+foreach ($hive in Get-ChildItem -LiteralPath 'Registry::HKEY_USERS' -ErrorAction SilentlyContinue) {
+    $system = "Registry::$($hive.Name)\Software\Microsoft\Windows\CurrentVersion\Policies\System"
+    if (Test-Path -LiteralPath $system) {
+        foreach ($name in 'DisableTaskMgr', 'DisableRegistryTools', 'DisableCMD') {
+            Remove-ItemProperty -LiteralPath $system -Name $name -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# 5. DNS
 Write-Step 'Flushing the DNS cache'
 & (Join-Path $env:SystemRoot 'System32\ipconfig.exe') /flushdns | Out-Null
 

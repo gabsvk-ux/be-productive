@@ -1,8 +1,11 @@
-# Handoff: enforcement (build steps 4 and 6)
+# Handoff: enforcement — step 6 (step 4 now built)
 
-This document is for whoever builds the enforcement layer. Steps 1–3 and 5 of the
-[build order](design.md#10-build-order) are done; this is the part that was deliberately
-left for a third party. It explains what exists, the seams it plugs into, exactly what
+This document is for whoever builds the remaining tamper-resistance layer (step 6). Steps 1–5
+of the [build order](design.md#10-build-order) are done, **including step 4 (enforcement itself)** —
+see `src/BeProductive.Core/Enforcement/` (`EnforcementPlanner`, `Enforcer`, `EnforcementPlan`) and
+the Windows `WindowsProcessGuard` / `WindowsEnforcementPolicies`. Step 6 is the part still left
+for a third party. The sections below on the seams and the must-not-break rules still apply; the
+step-4 how-to is kept as the reference for how enforcement already plugs in. It explains what exists, the seams it plugs into, exactly what
 to build, and the rules it must not break.
 
 Read [design.md](design.md) first (the whole product) and the two research notes:

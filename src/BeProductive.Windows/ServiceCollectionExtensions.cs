@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using BeProductive.Core.Enforcement;
 using BeProductive.Core.SafetyNet;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRegistry, WindowsRegistry>();
         services.AddSingleton<IHostsFile, WindowsHostsFile>();
         services.AddSingleton<IDnsCache, WindowsDnsCache>();
+        services.AddSingleton<IProcessGuard, WindowsProcessGuard>();
+        services.AddSingleton<IEnforcementPolicies, WindowsEnforcementPolicies>();
         return services;
     }
 }

@@ -50,7 +50,8 @@ public sealed class StatsBuilder(ISessionStore store, IRulesStore rules, Session
             best,
             store.CountEvents(SessionEventKinds.Pause, since, now),
             store.CountEvents(SessionEventKinds.Postpone, since, now),
-            store.CountEvents(SessionEventKinds.RecoveryExit, since, now));
+            store.CountEvents(SessionEventKinds.RecoveryExit, since, now),
+            store.CountEvents(SessionEventKinds.BlockedApp, since, now));
     }
 
     private static DayStats Live(SessionStatus today) =>

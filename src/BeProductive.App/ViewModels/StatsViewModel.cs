@@ -72,7 +72,7 @@ public sealed partial class StatsViewModel(AppViewModel app) : ObservableObject
     public string BestStreak => Stats is null ? "–" : Days(Stats.BestStreak);
 
     public string Interruptions => Stats is null ? "" :
-        $"{Stats.Pauses} pause(s), {Stats.Postpones} postpone(s) and {Stats.RecoveryExits} recovery exit(s) in this range.";
+        $"{Stats.Pauses} pause(s), {Stats.Postpones} postpone(s), {Stats.RecoveryExits} recovery exit(s) and {Stats.BlockedApps} blocked app launch(es) in this range.";
 
     public bool HasCategories => Categories.Count > 0;
 

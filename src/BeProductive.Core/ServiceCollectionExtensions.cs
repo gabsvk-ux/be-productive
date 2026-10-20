@@ -38,6 +38,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SqliteStore>();
         services.AddSingleton<ISessionStore>(provider => provider.GetRequiredService<SqliteStore>());
         services.AddSingleton<IRulesStore>(provider => provider.GetRequiredService<SqliteStore>());
+        services.AddSingleton<Enforcer>();
+        services.AddSingleton<IEnforcer>(provider => provider.GetRequiredService<Enforcer>());
         services.AddSingleton<SessionService>();
         return services;
     }
@@ -45,6 +47,8 @@ public static class ServiceCollectionExtensions
     /// <summary>For systems that have no platform implementation yet. Dry runs still work.</summary>
     public static IServiceCollection AddUnsupportedPlatform(this IServiceCollection services)
     {
+        services.AddSingleton<IProcessGuard, NullProcessGuard>();
+        services.AddSingleton<IEnforcementPolicies, NoEnforcementPolicies>();
         var platform = new UnsupportedPlatform();
         services.AddSingleton<IRegistry>(platform);
         services.AddSingleton<IHostsFile>(platform);
