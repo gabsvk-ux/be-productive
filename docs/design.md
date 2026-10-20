@@ -60,7 +60,7 @@ Each block can have an optional free-text note ("Calculus ch. 4").
 
 ## 5. Tamper resistance (v1)
 
-Admin tools (Task Manager, cmd, PowerShell, Terminal, regedit, Services/MMC) are blocked **all day until the minimum is done, breaks included**.
+Admin tools (Task Manager, cmd, PowerShell, Terminal, regedit, Services/MMC) are blocked **all day until the planned (binding) time is done, breaks included**. That's the minimum, or more if more was planned.
 
 - Per-user policies `DisableTaskMgr`, `DisableCMD`, `DisableRegistryTools` and `RestrictToPermittedSnapins`, written into your account's registry settings by the service
 - Re-applied when changed (change notification **plus** a 30 s timer) for the policies, the hosts file and the Chrome policies

@@ -2,16 +2,16 @@
 
 A personal focus app for Windows: until you've done your daily focus time, the laptop is limited to the apps and sites you need for work. See [docs/design.md](docs/design.md) for the full design.
 
-**Status: step 1 of the [build order](docs/design.md#10-build-order).** So far there are recovery codes, dry-run mode and the safety net. Nothing is blocked yet.
+**Status: step 2 of the [build order](docs/design.md#10-build-order).** So far there are recovery codes, dry-run mode, the safety net, and the session engine (gate, pomodoro blocks, breaks, tracking), which you drive with the `bp` command-line tool. Nothing is blocked yet: the service works out what *should* be locked, and step 4 will enforce it.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `src/BeProductive.Core` | Everything not tied to one OS: recovery codes, the enforcement switch, the change journal and restore |
+| `src/BeProductive.Core` | Everything not tied to one OS: the session engine, SQLite storage, the pipe protocol, recovery codes, the enforcement switch, the change journal and restore |
 | `src/BeProductive.Windows` | Windows implementations (registry, hosts file, DNS flush) |
-| `src/BeProductive.Service` | The background service (a Windows Service) |
-| `src/BeProductive.Cli` | `bp`, a command-line tool for codes, status and restore until the UI exists |
+| `src/BeProductive.Service` | The background service (a Windows Service): runs the session clock and answers the pipe |
+| `src/BeProductive.Cli` | `bp`, a command-line tool for driving the day until the UI exists |
 | `tests/BeProductive.Core.Tests` | Unit tests |
 | `scripts/restore.ps1` | Emergency undo. Keep a copy on a USB stick |
 | `scripts/install-service.ps1` | Dev helper to install the service |
@@ -35,6 +35,25 @@ A personal focus app for Windows: until you've done your daily focus time, the l
    dotnet run --project src/BeProductive.Cli -- codes init
    ```
 
+## Using it
+
+The service owns the day: it runs the clock every second, keeps its state in `C:\ProgramData\BeProductive\be-productive.db` (so restarts and reboots carry on) and answers commands over the named pipe `\\.\pipe\BeProductive`. The `bp` tool is one client; the UI (step 3) will be another.
+
+```powershell
+bp status                        # where the day stands
+bp presets                       # uni, projects, programming
+bp plan uni 120 25 Calculus 4    # plan 120 min with 25/5 blocks and start (the note is optional)
+bp postpone 16:30                # or postpone the start (3 per week, until 20:00)
+bp pause / bp resume             # pause the running block (10 min at most, then it resumes)
+bp next 45                       # after a break (or to cut it short), start the next block
+bp switch programming            # switch preset during a break
+bp extend 60 25                  # once the planned time is done, add extra time
+bp stop                          # stop extra time (planned time can't be stopped)
+bp exit <recovery code>          # end today's lock; the day counts as failed
+```
+
+The rules (minimum per weekday, long breaks, the 04:00 day reset and so on) can be changed in the `Sessions` section of `settings.json`. See [docs/settings.example.json](docs/settings.example.json).
+
 ## Safety first
 
 The app makes changes that could lock you out of your own PC, so every one of them goes through these safeguards:
@@ -52,7 +71,7 @@ The app makes changes that could lock you out of your own PC, so every one of th
 ## Recovery codes
 
 - `bp codes init` creates the first 10 codes and shows them **once**, for your friend to write down. The PC keeps only hashes.
-- `bp codes redeem <code>` uses one. Each works once.
+- `bp exit <code>` uses one to end today's lock. Each works once, and none is used up when nothing is locked.
 - With 3 or fewer left you're offered a new set (`bp codes regenerate`). Using the last one sends a new set automatically, and the service keeps retrying every 5 minutes until it goes through.
 - New sets are emailed to your friend and never shown on screen. The old codes keep working until the email is confirmed sent.
 

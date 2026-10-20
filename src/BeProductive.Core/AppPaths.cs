@@ -15,6 +15,8 @@ public sealed class AppPaths(string dataDirectory)
 
     public string PanicFile => Path.Combine(DataDirectory, "PANIC");
 
+    public string DatabaseFile => Path.Combine(DataDirectory, "be-productive.db");
+
     /// <summary>Uses the <c>DataDirectory</c> setting if present, otherwise the default location.</summary>
     public static AppPaths FromConfiguration(IConfiguration configuration) =>
         new(configuration["DataDirectory"] is { Length: > 0 } directory ? directory : DefaultDataDirectory());

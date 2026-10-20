@@ -10,4 +10,7 @@ internal static class Json
         WriteIndented = true,
         Converters = { new JsonStringEnumConverter() },
     };
+
+    /// <summary>The same, on one line: for the pipe protocol, where each message is a line.</summary>
+    public static readonly JsonSerializerOptions CompactOptions = new(Options) { WriteIndented = false };
 }

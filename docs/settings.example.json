@@ -3,6 +3,26 @@
     "DryRun": true,
     "PanicFileEnabled": true
   },
+  "Sessions": {
+    "DayStartsAt": "04:00:00",
+    "LatestStart": "20:00:00",
+    "PostponesPerWeek": 3,
+    "LongBreaks": true,
+    "LongBreakEvery": 4,
+    "LongBreakLength": "00:20:00",
+    "MaxPause": "00:10:00",
+    "NextBlockDeadline": "00:01:00",
+    "SleepResumeLimit": "00:30:00",
+    "MinimumMinutes": {
+      "Monday": 100,
+      "Tuesday": 100,
+      "Wednesday": 100,
+      "Thursday": 100,
+      "Friday": 100,
+      "Saturday": 100,
+      "Sunday": 100
+    }
+  },
   "Recovery": {
     "CodeCount": 10,
     "PromptThreshold": 3

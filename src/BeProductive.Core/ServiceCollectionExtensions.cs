@@ -1,6 +1,8 @@
 using BeProductive.Core.Enforcement;
 using BeProductive.Core.Recovery;
 using BeProductive.Core.SafetyNet;
+using BeProductive.Core.Sessions;
+using BeProductive.Core.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -18,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.Configure<RecoveryOptions>(configuration.GetSection(RecoveryOptions.SectionName));
         services.Configure<RecoveryDeliveryOptions>(configuration.GetSection(RecoveryDeliveryOptions.SectionName));
         services.Configure<SafetyNetOptions>(configuration.GetSection(SafetyNetOptions.SectionName));
+        services.Configure<SessionOptions>(configuration.GetSection(SessionOptions.SectionName));
 
         services.AddSingleton<EnforcementGate>();
 
@@ -31,6 +34,11 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IJournalStore, JsonJournalStore>();
         services.AddSingleton<SystemChanges>();
+
+        services.AddSingleton<SqliteStore>();
+        services.AddSingleton<ISessionStore>(provider => provider.GetRequiredService<SqliteStore>());
+        services.AddSingleton<IPresetStore>(provider => provider.GetRequiredService<SqliteStore>());
+        services.AddSingleton<SessionService>();
         return services;
     }
 
