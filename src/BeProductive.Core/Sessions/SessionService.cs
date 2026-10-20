@@ -56,6 +56,10 @@ public sealed class SessionService(
                     break;
                 case PresetsRequest:
                     return new IpcResponse(true, null, current.Snapshot(now), rules.All());
+                case StatsRequest stats:
+                    var statusNow = current.Snapshot(now);
+                    var builder = new StatsBuilder(store, rules, options.Value, time.LocalTimeZone);
+                    return new IpcResponse(true, null, statusNow, Stats: builder.Build(statusNow, Math.Clamp(stats.Days, 1, 3660), now));
                 case SettingsRequest:
                     return new IpcResponse(true, null, current.Snapshot(now), Settings: Settings());
                 case SavePresetRequest savePreset:

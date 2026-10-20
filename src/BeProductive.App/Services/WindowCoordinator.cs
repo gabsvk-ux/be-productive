@@ -21,12 +21,14 @@ public sealed class WindowCoordinator(Application application, IClassicDesktopSt
     private GateWindow? gate;
     private NextBlockWindow? nextBlock;
     private SettingsWindow? settings;
+    private StatsWindow? stats;
     private NativeMenuItem? quitItem;
     private bool refreshing;
 
     public void Start()
     {
         dashboard.SettingsRequested += ShowSettings;
+        dashboard.StatsRequested += ShowStats;
         app.StatusChanged += OnStatusChanged;
         CreateTrayIcon();
 
@@ -144,6 +146,20 @@ public sealed class WindowCoordinator(Application application, IClassicDesktopSt
         settings.Activate();
     }
 
+    private void ShowStats()
+    {
+        if (stats is null)
+        {
+            var viewModel = new StatsViewModel(app);
+            stats = new StatsWindow { DataContext = viewModel };
+            stats.Closed += (_, _) => stats = null;
+            _ = viewModel.LoadAsync();
+        }
+
+        stats.Show();
+        stats.Activate();
+    }
+
     private void Quit()
     {
         if (app.Status?.AdminToolsBlocked == true)
@@ -156,6 +172,8 @@ public sealed class WindowCoordinator(Application application, IClassicDesktopSt
     {
         var open = new NativeMenuItem("Open Be Productive");
         open.Click += (_, _) => ShowDashboard();
+        var statsItem = new NativeMenuItem("Stats");
+        statsItem.Click += (_, _) => ShowStats();
         var settingsItem = new NativeMenuItem("Settings");
         settingsItem.Click += (_, _) => ShowSettings();
         quitItem = new NativeMenuItem("Quit (once today's focus is done)");
@@ -165,7 +183,7 @@ public sealed class WindowCoordinator(Application application, IClassicDesktopSt
         {
             Icon = CreateIcon(),
             ToolTipText = "Be Productive",
-            Menu = [open, settingsItem, new NativeMenuItemSeparator(), quitItem],
+            Menu = [open, statsItem, settingsItem, new NativeMenuItemSeparator(), quitItem],
         };
         tray.Clicked += (_, _) => ShowDashboard();
         TrayIcon.SetIcons(application, [tray]);

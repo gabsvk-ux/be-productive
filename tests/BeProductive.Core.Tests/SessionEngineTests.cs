@@ -67,7 +67,7 @@ public class SessionEngineTests
         Assert.Equal(TimeSpan.FromMinutes(100), harness.State.Focused);
         Assert.Equal(4, harness.State.CompletedBlocks);
         Assert.False(harness.Engine.AdminToolsBlocked);
-        Assert.Equal(DayOutcome.Done, harness.Store.Days[harness.State.Day].Outcome);
+        Assert.Equal(DayOutcome.Done, harness.Store.DayRecords[harness.State.Day].Outcome);
         Assert.Equal(4, harness.Store.Blocks.Count(block => block.Completed));
     }
 
@@ -264,7 +264,7 @@ public class SessionEngineTests
 
         Assert.Equal(new DateOnly(2026, 10, 21), harness.State.Day);
         Assert.Equal(Phase.Gate, harness.State.Phase);
-        var tuesday = harness.Store.Days[new DateOnly(2026, 10, 20)];
+        var tuesday = harness.Store.DayRecords[new DateOnly(2026, 10, 20)];
         Assert.Equal(DayOutcome.Missed, tuesday.Outcome);
         Assert.Equal(TimeSpan.FromMinutes(25), tuesday.Focused);
     }
@@ -337,7 +337,7 @@ public class SessionEngineTests
         Assert.Equal(DayOutcome.Failed, harness.State.Outcome);
         Assert.False(harness.Engine.AdminToolsBlocked);
         Assert.Equal(TimeSpan.FromMinutes(10), harness.State.Focused);
-        Assert.Equal(DayOutcome.Failed, harness.Store.Days[harness.State.Day].Outcome);
+        Assert.Equal(DayOutcome.Failed, harness.Store.DayRecords[harness.State.Day].Outcome);
         Assert.Throws<SessionRuleException>(() => harness.Engine.EnsureRecoveryExitPossible());
     }
 

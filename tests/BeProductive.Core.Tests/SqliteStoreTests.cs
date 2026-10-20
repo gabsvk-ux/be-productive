@@ -138,6 +138,34 @@ public sealed class SqliteStoreTests : IDisposable
     }
 
     [Fact]
+    public void Stats_queries_read_days_blocks_and_events_in_range()
+    {
+        var store = new SqliteStore(directory.AppPaths);
+        var day = new DateOnly(2026, 10, 20);
+        store.SaveDay(new DayRecord(day.AddDays(-1), 100, 100, 0, TimeSpan.FromMinutes(100), 4, DayOutcome.Done));
+        store.SaveDay(new DayRecord(day, 100, 120, 0, TimeSpan.FromMinutes(30), 1, DayOutcome.Open));
+        store.SaveDay(new DayRecord(day.AddDays(-9), 100, 100, 0, TimeSpan.Zero, 0, DayOutcome.Missed));
+        foreach (var (preset, minutes) in new[] { ("uni", 25), ("uni", 25), ("programming", 45) })
+        {
+            store.RecordBlock(new BlockRecord(day, preset, BlockKind.Classic25, false, null,
+                EngineHarness.Tuesday9am, EngineHarness.Tuesday9am, TimeSpan.FromMinutes(minutes), true));
+        }
+
+        store.RecordEvent(new SessionEvent(EngineHarness.Tuesday9am, SessionEventKinds.Pause, null));
+        store.RecordEvent(new SessionEvent(EngineHarness.Tuesday9am.AddHours(2), SessionEventKinds.Pause, null));
+
+        var days = store.Days(day.AddDays(-6), day);
+        Assert.Equal([day.AddDays(-1), day], days.Select(record => record.Day));
+        Assert.Equal(DayOutcome.Done, days[0].Outcome);
+        Assert.Equal(TimeSpan.FromMinutes(100), days[0].Focused);
+
+        Assert.Equal(
+            [("programming", TimeSpan.FromMinutes(45), 1), ("uni", TimeSpan.FromMinutes(50), 2)],
+            store.FocusByPreset(day, day).OrderBy(total => total.PresetId));
+        Assert.Equal(1, store.CountEvents(SessionEventKinds.Pause, EngineHarness.Tuesday9am, EngineHarness.Tuesday9am.AddHours(1)));
+    }
+
+    [Fact]
     public void Pipe_messages_round_trip_as_single_lines()
     {
         IpcRequest[] requests =

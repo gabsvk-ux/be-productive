@@ -246,6 +246,62 @@ public sealed class SqliteStore : ISessionStore, IRulesStore
         return Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture);
     }
 
+    public int CountEvents(string kind, DateTimeOffset since, DateTimeOffset until)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM events WHERE kind = $kind AND at >= $since AND at < $until";
+        command.Parameters.AddWithValue("$kind", kind);
+        command.Parameters.AddWithValue("$since", TimeText(since));
+        command.Parameters.AddWithValue("$until", TimeText(until));
+        return Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture);
+    }
+
+    public IReadOnlyList<DayRecord> Days(DateOnly from, DateOnly to)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT day, minimum_minutes, binding_minutes, extra_minutes, focused_seconds, completed_blocks, outcome
+            FROM days WHERE day >= $from AND day <= $to ORDER BY day
+            """;
+        command.Parameters.AddWithValue("$from", DayText(from));
+        command.Parameters.AddWithValue("$to", DayText(to));
+        using var reader = command.ExecuteReader();
+        var days = new List<DayRecord>();
+        while (reader.Read())
+        {
+            days.Add(new DayRecord(
+                DateOnly.ParseExact(reader.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+                reader.GetInt32(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                TimeSpan.FromSeconds(reader.GetInt64(4)),
+                reader.GetInt32(5),
+                Enum.Parse<DayOutcome>(reader.GetString(6))));
+        }
+
+        return days;
+    }
+
+    public IReadOnlyList<(string PresetId, TimeSpan Focused, int CompletedBlocks)> FocusByPreset(DateOnly from, DateOnly to)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT preset_id, SUM(focused_seconds), SUM(completed)
+            FROM blocks WHERE day >= $from AND day <= $to
+            GROUP BY preset_id ORDER BY SUM(focused_seconds) DESC
+            """;
+        command.Parameters.AddWithValue("$from", DayText(from));
+        command.Parameters.AddWithValue("$to", DayText(to));
+        using var reader = command.ExecuteReader();
+        var totals = new List<(string, TimeSpan, int)>();
+        while (reader.Read())
+            totals.Add((reader.GetString(0), TimeSpan.FromSeconds(reader.GetInt64(1)), reader.GetInt32(2)));
+        return totals;
+    }
+
     private T? LoadValue<T>(string key)
         where T : class
     {

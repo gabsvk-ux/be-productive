@@ -18,7 +18,7 @@ internal sealed class InMemorySessionStore : ISessionStore, IRulesStore
 
     public List<BlockRecord> Blocks { get; } = [];
 
-    public Dictionary<DateOnly, DayRecord> Days { get; } = [];
+    public Dictionary<DateOnly, DayRecord> DayRecords { get; } = [];
 
     public List<SessionEvent> Events { get; } = [];
 
@@ -53,12 +53,25 @@ internal sealed class InMemorySessionStore : ISessionStore, IRulesStore
 
     public void RecordBlock(BlockRecord block) => Blocks.Add(block);
 
-    public void SaveDay(DayRecord day) => Days[day.Day] = day;
+    public void SaveDay(DayRecord day) => DayRecords[day.Day] = day;
 
     public void RecordEvent(SessionEvent sessionEvent) => Events.Add(sessionEvent);
 
     public int CountEvents(string kind, DateTimeOffset since) =>
         Events.Count(sessionEvent => sessionEvent.Kind == kind && sessionEvent.At >= since);
+
+    public int CountEvents(string kind, DateTimeOffset since, DateTimeOffset until) =>
+        Events.Count(sessionEvent => sessionEvent.Kind == kind && sessionEvent.At >= since && sessionEvent.At < until);
+
+    public IReadOnlyList<DayRecord> Days(DateOnly from, DateOnly to) =>
+        DayRecords.Values.Where(day => day.Day >= from && day.Day <= to).OrderBy(day => day.Day).ToList();
+
+    public IReadOnlyList<(string PresetId, TimeSpan Focused, int CompletedBlocks)> FocusByPreset(DateOnly from, DateOnly to) =>
+        Blocks.Where(block => block.Day >= from && block.Day <= to)
+            .GroupBy(block => block.PresetId)
+            .Select(group => (group.Key, TimeSpan.FromTicks(group.Sum(block => block.Focused.Ticks)), group.Count(block => block.Completed)))
+            .OrderByDescending(total => total.Item2)
+            .ToList();
 }
 
 /// <summary>An engine on a hand-driven clock. Days run in UTC; the test day is Tuesday 20 October 2026.</summary>

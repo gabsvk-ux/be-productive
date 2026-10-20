@@ -54,4 +54,11 @@ public interface ISessionStore
     void RecordEvent(SessionEvent sessionEvent);
 
     int CountEvents(string kind, DateTimeOffset since);
+
+    int CountEvents(string kind, DateTimeOffset since, DateTimeOffset until);
+
+    IReadOnlyList<DayRecord> Days(DateOnly from, DateOnly to);
+
+    /// <summary>Focus seconds and completed blocks per preset id.</summary>
+    IReadOnlyList<(string PresetId, TimeSpan Focused, int CompletedBlocks)> FocusByPreset(DateOnly from, DateOnly to);
 }

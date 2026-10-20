@@ -1,0 +1,101 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BeProductive.App.ViewModels"
+        xmlns:views="using:BeProductive.App.Views"
+        x:Class="BeProductive.App.Views.StatsWindow"
+        x:DataType="vm:StatsViewModel"
+        Title="Be Productive stats"
+        Width="900" Height="760" MinWidth="640" MinHeight="520"
+        WindowStartupLocation="CenterScreen">
+
+  <ScrollViewer>
+    <StackPanel Spacing="22" Margin="28">
+
+      <!-- Header and the one filter, above everything it controls. -->
+      <DockPanel>
+        <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding AllRanges}" SelectedItem="{Binding SelectedRange}" MinWidth="170" VerticalAlignment="Center">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:StatsRange">
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <StackPanel Spacing="2">
+          <TextBlock Classes="title" Text="Stats" />
+          <TextBlock Classes="muted" Text="{Binding RangeText}" />
+        </StackPanel>
+      </DockPanel>
+
+      <!-- Figures: one hero number, then small tiles. -->
+      <WrapPanel>
+        <StackPanel Margin="0,0,48,12" Spacing="0">
+          <TextBlock Classes="label" Text="Total focus" />
+          <TextBlock Classes="hero" Text="{Binding TotalFocus}" />
+        </StackPanel>
+        <StackPanel Margin="0,8,32,12" Spacing="2">
+          <TextBlock Classes="label" Text="Average per day" />
+          <TextBlock Classes="tileValue" Text="{Binding Average}" />
+        </StackPanel>
+        <StackPanel Margin="0,8,32,12" Spacing="2">
+          <TextBlock Classes="label" Text="Days on target" />
+          <TextBlock Classes="tileValue" Text="{Binding OnTarget}" />
+        </StackPanel>
+        <StackPanel Margin="0,8,32,12" Spacing="2">
+          <TextBlock Classes="label" Text="Current streak" />
+          <TextBlock Classes="tileValue" Text="{Binding Streak}" />
+        </StackPanel>
+        <StackPanel Margin="0,8,32,12" Spacing="2">
+          <TextBlock Classes="label" Text="Best streak" />
+          <TextBlock Classes="tileValue" Text="{Binding BestStreak}" />
+        </StackPanel>
+      </WrapPanel>
+
+      <!-- Focus over time -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="label" Text="{Binding ChartTitle}" />
+        <views:ColumnChart Columns="{Binding Columns}" Height="240" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Border Width="14" Height="2" Background="{DynamicResource ChartGoal}" VerticalAlignment="Center" />
+          <TextBlock Classes="muted" Text="Goal: planned time plus any extra. Hover a column for details." />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Focus per preset -->
+      <StackPanel Spacing="10" IsVisible="{Binding HasCategories}">
+        <TextBlock Classes="label" Text="Focus per preset" />
+        <ItemsControl ItemsSource="{Binding Categories}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CategoryBar">
+              <Grid ColumnDefinitions="160,Auto,Auto" Margin="0,4">
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Border Grid.Column="1" Width="{Binding BarWidth}" Height="16" CornerRadius="0,4,4,0"
+                        Background="{DynamicResource ChartSeries}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Classes="muted" Text="{Binding Value}" Margin="10,0,0,0" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <TextBlock Classes="muted" Text="{Binding Interruptions}" />
+
+      <!-- The same numbers as a table. -->
+      <Expander Header="Day by day" HorizontalAlignment="Stretch">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:DayRow">
+              <Grid ColumnDefinitions="140,120,120,*" Margin="0,3">
+                <TextBlock Text="{Binding Day}" />
+                <TextBlock Grid.Column="1" Text="{Binding Focus}" />
+                <TextBlock Grid.Column="2" Classes="muted" Text="{Binding Goal, StringFormat='goal {0}'}" />
+                <TextBlock Grid.Column="3" Text="{Binding Outcome}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Expander>
+
+      <TextBlock Classes="error" Text="{Binding App.Error}" IsVisible="{Binding App.Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+  </ScrollViewer>
+</Window>

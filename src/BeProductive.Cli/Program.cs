@@ -33,6 +33,8 @@ try
     {
         ["status"] => await Status(),
         ["presets"] => await Presets(),
+        ["stats"] => await Stats(7),
+        ["stats", var days] => await Stats(Minutes(days)),
         ["plan", var preset, var minutes, .. var rest] => await Send(new PlanRequest(preset, Minutes(minutes), Block(rest, 0), Note(rest, 1))),
         ["postpone", var until] => await Send(new PostponeRequest(TodayAt(until))),
         ["pause"] => await Send(new PauseRequest()),
@@ -99,6 +101,14 @@ async Task<int> Presets()
             Console.WriteLine($"{"",-14} apps: {string.Join(", ", preset.AllowedApps)}");
     }
 
+    return 0;
+}
+
+async Task<int> Stats(int days)
+{
+    var response = await IpcProtocol.SendAsync(new StatsRequest(days), CancellationToken.None);
+    if (response.Stats is { } stats)
+        StatsPrinter.Print(stats);
     return 0;
 }
 
@@ -171,6 +181,7 @@ int Usage()
         Today
           status                                 Where the day stands
           presets                                List presets
+          stats [days]                           Focus per day and per preset (default: the last 7 days)
           plan <preset> <minutes> [15|25|45] [note]
                                                  Plan the day at the start screen and start the first block
           postpone <HH:mm>                       Postpone the start (3 per week, until 20:00 at the latest)

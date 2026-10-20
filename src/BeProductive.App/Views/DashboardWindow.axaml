@@ -23,6 +23,7 @@
       </Border>
       <TextBlock Classes="muted" Text="{Binding LockText}" />
       <StackPanel Orientation="Horizontal" Spacing="20">
+        <Button Classes="link" Content="Stats" Click="OpenStats" />
         <Button Classes="link" Content="Settings" Click="OpenSettings" />
         <Button Classes="link" Content="Emergency exit" Command="{Binding ToggleExitCommand}" IsVisible="{Binding CanUseRecoveryCode}" />
       </StackPanel>

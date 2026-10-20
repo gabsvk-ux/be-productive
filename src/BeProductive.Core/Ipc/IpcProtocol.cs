@@ -22,6 +22,7 @@ namespace BeProductive.Core.Ipc;
 [JsonDerivedType(typeof(SavePresetRequest), "save-preset")]
 [JsonDerivedType(typeof(DeletePresetRequest), "delete-preset")]
 [JsonDerivedType(typeof(SaveMinimumsRequest), "save-minimums")]
+[JsonDerivedType(typeof(StatsRequest), "stats")]
 public abstract record IpcRequest;
 
 public sealed record StatusRequest : IpcRequest;
@@ -55,6 +56,9 @@ public sealed record DeletePresetRequest(string PresetId) : IpcRequest;
 
 public sealed record SaveMinimumsRequest(WeekdayMinimums Minimums) : IpcRequest;
 
+/// <summary>Tracking for the last <paramref name="Days"/> days, today included.</summary>
+public sealed record StatsRequest(int Days) : IpcRequest;
+
 /// <summary>The rules in force now, and the loosening changes waiting for the next day.</summary>
 public sealed record SettingsSnapshot(
     IReadOnlyList<Preset> Presets,
@@ -79,7 +83,8 @@ public sealed record IpcResponse(
     SessionStatus? Status,
     IReadOnlyList<Preset>? Presets = null,
     string? Message = null,
-    SettingsSnapshot? Settings = null);
+    SettingsSnapshot? Settings = null,
+    StatsSnapshot? Stats = null);
 
 public sealed class ServiceUnavailableException(string message) : Exception(message);
 

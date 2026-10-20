@@ -11,6 +11,9 @@ public partial class DashboardWindow : Window
     /// <summary>Asks for the settings window; the coordinator owns it.</summary>
     public event Action? SettingsRequested;
 
+    /// <summary>Asks for the stats window; the coordinator owns it.</summary>
+    public event Action? StatsRequested;
+
     /// <summary>When false, closing only hides the window (the app keeps running in the tray).</summary>
     public bool AllowClose { get; set; }
 
@@ -26,6 +29,8 @@ public partial class DashboardWindow : Window
     }
 
     private void OpenSettings(object? sender, RoutedEventArgs e) => SettingsRequested?.Invoke();
+
+    private void OpenStats(object? sender, RoutedEventArgs e) => StatsRequested?.Invoke();
 
     private async void OpenFolder(object? sender, RoutedEventArgs e)
     {

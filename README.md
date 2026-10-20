@@ -2,12 +2,12 @@
 
 A personal focus app for Windows: until you've done your daily focus time, the laptop is limited to the apps and sites you need for work. See [docs/design.md](docs/design.md) for the full design.
 
-**Status: step 3 of the [build order](docs/design.md#10-build-order).** So far there are:
+**Status: steps 1–3 and 5 of the [build order](docs/design.md#10-build-order).** So far there are:
 - recovery codes, dry-run mode and the safety net
 - the session engine (gate, pomodoro blocks, breaks, tracking)
-- the desktop app: start screen, dashboard, next-block prompt, notifications, settings and tray icon
+- the desktop app: start screen, dashboard, next-block prompt, notifications, settings, stats and tray icon
 
-Nothing is blocked yet: the service works out what *should* be locked, and step 4 will enforce it.
+Nothing is blocked yet: the service works out what *should* be locked, but step 4 (enforcing it) isn't built.
 
 ## Layout
 
@@ -52,13 +52,25 @@ Nothing is blocked yet: the service works out what *should* be locked, and step 
 - **Next block.** When a break ends, a full-screen prompt asks for the next block's length. If you don't pick one within 60 s, the preset's default starts.
 - **Notifications.** A sound and a note in the corner when a break starts and when the day's time is done.
 - **Settings.** Edit presets (apps, sites, folders, terminals) and the daily minimums. Stricter changes apply at once; looser ones from tomorrow, and the window shows what's waiting.
-- **Tray icon.** Open, Settings and Quit. Quit only works once the planned time is done.
+- **Stats.** From the dashboard or the tray. For the last 7 days, 30 days or 12 months it shows:
+  - total focus, the average per day, days on target, and the current and best streak
+  - a chart of focus per day (per month for the year), with each day's goal marked; hover a column for details
+  - focus per preset
+  - pauses, postpones and recovery exits
+  - a day-by-day table
+
+  Streaks count days on target (or free days) in a row. Days with nothing recorded are skipped, and today only counts once it's done.
+- **Tray icon.** Open, Stats, Settings and Quit. Quit only works once the planned time is done.
 
 Screenshots (rendered by the UI tests; regenerate with `SCREENSHOT_DIR=docs/screenshots dotnet test`):
 
 | Start screen | Next block | Dashboard |
 |---|---|---|
 | ![Start screen](docs/screenshots/gate.png) | ![Next block](docs/screenshots/next-block.png) | ![Dashboard](docs/screenshots/dashboard-focus.png) |
+
+| Stats (7 days) | Stats (30 days) |
+|---|---|
+| ![Stats, last 7 days](docs/screenshots/stats-week.png) | ![Stats, last 30 days](docs/screenshots/stats-month.png) |
 
 ### The service and the CLI
 
@@ -67,6 +79,7 @@ The service owns the day: it runs the clock every second, keeps its state in `C:
 ```powershell
 bp status                        # where the day stands
 bp presets                       # uni, projects, programming
+bp stats 30                      # focus per day and per preset (default: 7 days)
 bp plan uni 120 25 Calculus 4    # plan 120 min with 25/5 blocks and start (the note is optional)
 bp postpone 16:30                # or postpone the start (3 per week, until 20:00)
 bp pause / bp resume             # pause the running block (10 min at most, then it resumes)

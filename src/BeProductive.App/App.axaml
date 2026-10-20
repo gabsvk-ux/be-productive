@@ -12,12 +12,22 @@
           <SolidColorBrush x:Key="CardBorder" Color="#260F172A" />
           <SolidColorBrush x:Key="Danger" Color="#DC2626" />
           <SolidColorBrush x:Key="Message" Color="#0F766E" />
+          <SolidColorBrush x:Key="ChartSeries" Color="#2A78D6" />
+          <SolidColorBrush x:Key="ChartGrid" Color="#E4E3DF" />
+          <SolidColorBrush x:Key="ChartText" Color="#52514E" />
+          <SolidColorBrush x:Key="ChartGoal" Color="#0B0B0B" />
+          <SolidColorBrush x:Key="ChartHover" Color="#0D0F172A" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="CardBackground" Color="#14FFFFFF" />
           <SolidColorBrush x:Key="CardBorder" Color="#2EFFFFFF" />
           <SolidColorBrush x:Key="Danger" Color="#F87171" />
           <SolidColorBrush x:Key="Message" Color="#2DD4BF" />
+          <SolidColorBrush x:Key="ChartSeries" Color="#3987E5" />
+          <SolidColorBrush x:Key="ChartGrid" Color="#3A3A38" />
+          <SolidColorBrush x:Key="ChartText" Color="#C3C2B7" />
+          <SolidColorBrush x:Key="ChartGoal" Color="#F0EFEC" />
+          <SolidColorBrush x:Key="ChartHover" Color="#14FFFFFF" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
       <SolidColorBrush x:Key="Accent" Color="#14B8A6" />
@@ -126,6 +136,15 @@
     <Style Selector="ListBox.cards > ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.segments > ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource AccentSoft}" />
       <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+    </Style>
+
+    <Style Selector="TextBlock.hero">
+      <Setter Property="FontSize" Value="52" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.tileValue">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style Selector="Border.panel">

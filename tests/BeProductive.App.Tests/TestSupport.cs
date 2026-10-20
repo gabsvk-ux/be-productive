@@ -38,12 +38,15 @@ internal sealed class FakeServiceClient : IServiceClient
 
     public List<IpcRequest> Sent { get; } = [];
 
+    /// <summary>Builds the stats answer for a number of days.</summary>
+    public Func<int, StatsSnapshot>? Stats { get; set; }
+
     /// <summary>When set, commands are refused with this error.</summary>
     public string? Refuse { get; set; }
 
     public Task<IpcResponse> SendAsync(IpcRequest request, CancellationToken cancellationToken = default)
     {
-        if (request is not (StatusRequest or PresetsRequest or SettingsRequest))
+        if (request is not (StatusRequest or PresetsRequest or SettingsRequest or StatsRequest))
             Sent.Add(request);
         if (Refuse is not null && request is not (StatusRequest or PresetsRequest))
             return Task.FromResult(new IpcResponse(false, Refuse, Status));
@@ -53,6 +56,7 @@ internal sealed class FakeServiceClient : IServiceClient
         {
             PresetsRequest => new IpcResponse(true, null, Status, Presets),
             SettingsRequest => new IpcResponse(true, null, Status, Settings: settings),
+            StatsRequest stats => new IpcResponse(true, null, Status, Stats: Stats?.Invoke(stats.Days)),
             SavePresetRequest => new IpcResponse(true, null, Status, Message: "Saved.", Settings: settings),
             _ => new IpcResponse(true, null, Status),
         });

@@ -408,7 +408,13 @@ public sealed class SessionEngine
 
     private DateOnly DayOf(DateTimeOffset now) => DayOf(now, options, zone);
 
-    private DateTimeOffset LocalTime(DateOnly day, TimeSpan timeOfDay)
+    private DateTimeOffset LocalTime(DateOnly day, TimeSpan timeOfDay) => LocalTime(day, timeOfDay, zone);
+
+    /// <summary>The moment a day begins (at <see cref="SessionOptions.DayStartsAt"/>).</summary>
+    public static DateTimeOffset DayStart(DateOnly day, SessionOptions options, TimeZoneInfo zone) =>
+        LocalTime(day, options.DayStartsAt, zone);
+
+    private static DateTimeOffset LocalTime(DateOnly day, TimeSpan timeOfDay, TimeZoneInfo zone)
     {
         var local = day.ToDateTime(TimeOnly.MinValue) + timeOfDay;
         return new DateTimeOffset(local, zone.GetUtcOffset(local));
