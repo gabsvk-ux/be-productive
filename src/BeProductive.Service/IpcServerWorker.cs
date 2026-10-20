@@ -17,20 +17,24 @@ public sealed class IpcServerWorker(SessionService sessions, ILogger<IpcServerWo
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var pipe = CreatePipe();
+            NamedPipeServerStream? pipe = null;
             try
             {
+                pipe = CreatePipe();
                 await pipe.WaitForConnectionAsync(stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                await pipe.DisposeAsync();
+                if (pipe is not null)
+                    await pipe.DisposeAsync();
                 break;
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Waiting for a pipe connection failed");
-                await pipe.DisposeAsync();
+                // Logged and retried: a pipe problem must never stop the service.
+                logger.LogError(exception, "Opening the pipe for the next connection failed");
+                if (pipe is not null)
+                    await pipe.DisposeAsync();
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
                 continue;
             }
@@ -86,11 +90,19 @@ public sealed class IpcServerWorker(SessionService sessions, ILogger<IpcServerWo
                 IpcProtocol.PipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
-    /// <summary>The service runs as SYSTEM, so the pipe has to let signed-in users connect explicitly.</summary>
+    /// <summary>
+    /// The service runs as SYSTEM, so the pipe has to let signed-in users connect explicitly. The account
+    /// the service runs as needs full control too: opening each further copy of the pipe requires it, and
+    /// when run from a non-elevated terminal that account isn't counted as an administrator.
+    /// </summary>
     [SupportedOSPlatform("windows")]
     private static NamedPipeServerStream CreateWindowsPipe()
     {
         var security = new PipeSecurity();
+        using (var self = WindowsIdentity.GetCurrent())
+        {
+            security.AddAccessRule(new PipeAccessRule(self.User!, PipeAccessRights.FullControl, AccessControlType.Allow));
+        }
         security.AddAccessRule(new PipeAccessRule(
             new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null), PipeAccessRights.ReadWrite, AccessControlType.Allow));
         security.AddAccessRule(new PipeAccessRule(
