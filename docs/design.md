@@ -46,7 +46,9 @@ A preset **is** the tracking category. Each preset has:
 
 Each block can have an optional free-text note ("Calculus ch. 4").
 
-**Always allowed** in every preset: the app itself, Settings, Calculator, the screenshot tool, the password manager, and a music app.
+**Always allowed** in every preset: the app itself, Settings, Calculator, the screenshot tool and the password manager.
+
+**Music:** no music app is allowed everywhere. Presets that want one (e.g. Spotify for Projects and Programming) list it in their own allowed apps. Plain background-noise audio files (white, pink or brown noise) should stay playable in every preset.
 **Browsers:** only Chrome is allowed during focus. Edge, Firefox and every other browser are killed.
 
 **Changing settings:** changes that tighten things apply right away. Changes that loosen things (allowing an app, removing a blocked domain, lowering the minimum) only apply **from the next day**.
