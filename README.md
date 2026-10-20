@@ -7,7 +7,7 @@ A personal focus app for Windows: until you've done your daily focus time, the l
 - the session engine (gate, pomodoro blocks, breaks, tracking)
 - the desktop app: start screen, dashboard, next-block prompt, notifications, settings, stats and tray icon
 
-Nothing is blocked yet: the service works out what *should* be locked, but step 4 (enforcing it) isn't built.
+Nothing is blocked yet: the service works out what *should* be locked, but the enforcement layer (build steps 4 and 6) isn't built. That layer is being done by a third party — see **[docs/handoff-enforcement.md](docs/handoff-enforcement.md)** for what it must do and how it plugs into everything here.
 
 ## Layout
 
