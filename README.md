@@ -2,7 +2,12 @@
 
 A personal focus app for Windows: until you've done your daily focus time, the laptop is limited to the apps and sites you need for work. See [docs/design.md](docs/design.md) for the full design.
 
-**Status: step 2 of the [build order](docs/design.md#10-build-order).** So far there are recovery codes, dry-run mode, the safety net, and the session engine (gate, pomodoro blocks, breaks, tracking), which you drive with the `bp` command-line tool. Nothing is blocked yet: the service works out what *should* be locked, and step 4 will enforce it.
+**Status: step 3 of the [build order](docs/design.md#10-build-order).** So far there are:
+- recovery codes, dry-run mode and the safety net
+- the session engine (gate, pomodoro blocks, breaks, tracking)
+- the desktop app: start screen, dashboard, next-block prompt, notifications, settings and tray icon
+
+Nothing is blocked yet: the service works out what *should* be locked, and step 4 will enforce it.
 
 ## Layout
 
@@ -11,10 +16,12 @@ A personal focus app for Windows: until you've done your daily focus time, the l
 | `src/BeProductive.Core` | Everything not tied to one OS: the session engine, SQLite storage, the pipe protocol, recovery codes, the enforcement switch, the change journal and restore |
 | `src/BeProductive.Windows` | Windows implementations (registry, hosts file, DNS flush) |
 | `src/BeProductive.Service` | The background service (a Windows Service): runs the session clock and answers the pipe |
-| `src/BeProductive.Cli` | `bp`, a command-line tool for driving the day until the UI exists |
-| `tests/BeProductive.Core.Tests` | Unit tests |
+| `src/BeProductive.App` | The desktop app (Avalonia): start screen, dashboard, next-block prompt, settings, tray icon |
+| `src/BeProductive.Cli` | `bp`, a command-line tool: the same commands as the app, plus setup and safety |
+| `tests/BeProductive.Core.Tests` | Unit tests for everything in Core |
+| `tests/BeProductive.App.Tests` | Headless UI tests; they also save screenshots of every screen |
 | `scripts/restore.ps1` | Emergency undo. Keep a copy on a USB stick |
-| `scripts/install-service.ps1` | Dev helper to install the service |
+| `scripts/install.ps1` | Dev helper to install the service, the app (started at sign-in) and the CLI |
 
 ## Getting started (Windows)
 
@@ -24,11 +31,12 @@ A personal focus app for Windows: until you've done your daily focus time, the l
    dotnet build
    dotnet test
    ```
-3. Run the service in a console window (Ctrl+C stops it):
+3. Run the service in a console window (Ctrl+C stops it), then the app:
    ```powershell
    dotnet run --project src/BeProductive.Service
+   dotnet run --project src/BeProductive.App
    ```
-   Or install it as a real Windows service from an admin terminal: `.\scripts\install-service.ps1`.
+   Or install everything for real from an admin terminal with `.\scripts\install.ps1`. That sets up the service as a Windows service, starts the app at every sign-in, and installs `bp` into `C:\Program Files\BeProductive\Cli`.
 4. Use the CLI (from an admin terminal, because the state lives in `C:\ProgramData\BeProductive`):
    ```powershell
    dotnet run --project src/BeProductive.Cli -- status
@@ -36,6 +44,23 @@ A personal focus app for Windows: until you've done your daily focus time, the l
    ```
 
 ## Using it
+
+### The app
+
+- **Start screen.** While today isn't planned, a full-screen start screen covers everything and can't be closed. There you pick a preset, plan the focus time (at least the minimum, with an estimate of when you'll finish), choose the first block and start. From there you can also postpone, or use a recovery code.
+- **Dashboard.** A small window with the countdown, today's progress and what can be done right now: pause and resume, cut a break short, switch preset, add or stop extra time, and open the preset's folders. Closing it keeps the app in the tray.
+- **Next block.** When a break ends, a full-screen prompt asks for the next block's length. If you don't pick one within 60 s, the preset's default starts.
+- **Notifications.** A sound and a note in the corner when a break starts and when the day's time is done.
+- **Settings.** Edit presets (apps, sites, folders, terminals) and the daily minimums. Stricter changes apply at once; looser ones from tomorrow, and the window shows what's waiting.
+- **Tray icon.** Open, Settings and Quit. Quit only works once the planned time is done.
+
+Screenshots (rendered by the UI tests; regenerate with `SCREENSHOT_DIR=docs/screenshots dotnet test`):
+
+| Start screen | Next block | Dashboard |
+|---|---|---|
+| ![Start screen](docs/screenshots/gate.png) | ![Next block](docs/screenshots/next-block.png) | ![Dashboard](docs/screenshots/dashboard-focus.png) |
+
+### The service and the CLI
 
 The service owns the day: it runs the clock every second, keeps its state in `C:\ProgramData\BeProductive\be-productive.db` (so restarts and reboots carry on) and answers commands over the named pipe `\\.\pipe\BeProductive`. The `bp` tool is one client; the UI (step 3) will be another.
 

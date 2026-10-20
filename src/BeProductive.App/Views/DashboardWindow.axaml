@@ -1,0 +1,128 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BeProductive.App.ViewModels"
+        xmlns:core="using:BeProductive.Core.Sessions"
+        x:Class="BeProductive.App.Views.DashboardWindow"
+        x:DataType="vm:DashboardViewModel"
+        x:Name="Root"
+        Title="Be Productive"
+        Width="440" Height="720" MinWidth="380" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+
+  <DockPanel Margin="24">
+    <!-- Footer -->
+    <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,16,0,0">
+      <Border Classes="panel" IsVisible="{Binding ShowExit}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="A recovery code from your friend ends today's lock. Today will count as failed." TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBox Text="{Binding ExitCode}" Watermark="XXXX-XXXX-XXXX-XXXX" Width="220" />
+            <Button Content="Use code" Command="{Binding ExitCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+      <TextBlock Classes="muted" Text="{Binding LockText}" />
+      <StackPanel Orientation="Horizontal" Spacing="20">
+        <Button Classes="link" Content="Settings" Click="OpenSettings" />
+        <Button Classes="link" Content="Emergency exit" Command="{Binding ToggleExitCommand}" IsVisible="{Binding CanUseRecoveryCode}" />
+      </StackPanel>
+    </StackPanel>
+
+    <ScrollViewer>
+      <StackPanel Spacing="18">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="eyebrow" Text="BE PRODUCTIVE" />
+          <TextBlock Classes="title" Text="{Binding Title}" />
+          <TextBlock Classes="muted" Text="{Binding Subtitle}" />
+        </StackPanel>
+
+        <StackPanel Spacing="0" IsVisible="{Binding HasTimer}" Margin="0,8">
+          <TextBlock Classes="timer" Text="{Binding TimerText}" />
+          <TextBlock Classes="muted" Text="{Binding TimerCaption}" HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Spacing="6" IsVisible="{Binding HasProgress}">
+          <ProgressBar Minimum="0" Maximum="{Binding GoalMinutes}" Value="{Binding FocusedMinutes}" Height="8" CornerRadius="4"
+                       Foreground="{StaticResource Accent}" />
+          <TextBlock Classes="muted" Text="{Binding ProgressText}" />
+        </StackPanel>
+
+        <!-- Focus -->
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Content="Pause" Command="{Binding PauseCommand}" IsVisible="{Binding CanPause}" />
+          <Button Classes="primary" Content="Resume" Command="{Binding ResumeCommand}" IsVisible="{Binding CanResume}" />
+          <Button Content="Stop extra time" Command="{Binding StopExtraCommand}" IsVisible="{Binding CanStopExtra}" />
+        </StackPanel>
+
+        <!-- Break -->
+        <Border Classes="panel" IsVisible="{Binding IsBreak}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="label" Text="Next block" />
+            <ComboBox ItemsSource="{Binding Blocks}" SelectedItem="{Binding NextBlock}" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:BlockChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="Cut the break short and start" Command="{Binding StartNextCommand}" />
+            <TextBlock Classes="label" Text="Switch preset" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SwitchTo}" MinWidth="200">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="core:Preset">
+                    <TextBlock Text="{Binding Name}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Content="Switch" Command="{Binding SwitchPresetCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Done: extra time -->
+        <Border Classes="panel" IsVisible="{Binding CanExtend}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="label" Text="Keep going? Extra time can be stopped whenever you like." TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <NumericUpDown Value="{Binding ExtraMinutes}" Minimum="5" Maximum="480" Increment="15" FormatString="0" Width="130" />
+              <TextBlock Text="min of" VerticalAlignment="Center" />
+              <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SwitchTo}" MinWidth="150">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="core:Preset">
+                    <TextBlock Text="{Binding Name}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ComboBox ItemsSource="{Binding Blocks}" SelectedItem="{Binding NextBlock}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:BlockChoice">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Classes="primary" Content="Add extra time" Command="{Binding ExtendCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Folder shortcuts -->
+        <StackPanel Spacing="8" IsVisible="{Binding HasFolders}">
+          <TextBlock Classes="label" Text="Folders" />
+          <ItemsControl ItemsSource="{Binding Folders}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Classes="link" Content="{Binding}" Tag="{Binding}" Click="OpenFolder" Margin="0,2" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <TextBlock Classes="error" Text="{Binding App.Error}" IsVisible="{Binding App.Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Classes="message" Text="{Binding App.Message}" IsVisible="{Binding App.Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

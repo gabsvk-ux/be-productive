@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BeProductive.App.Views.NotificationWindow"
+        Title="Be Productive"
+        Width="340" SizeToContent="Height"
+        SystemDecorations="None" Topmost="True" ShowInTaskbar="False" ShowActivated="False" CanResize="False"
+        RequestedThemeVariant="Dark"
+        Background="{StaticResource LockBackground}">
+  <Border BorderBrush="{StaticResource Accent}" BorderThickness="0,0,0,3" Padding="18,16">
+    <StackPanel Spacing="4">
+      <TextBlock x:Name="Heading" FontSize="16" FontWeight="SemiBold" />
+      <TextBlock x:Name="Body" Classes="muted" />
+    </StackPanel>
+  </Border>
+</Window>

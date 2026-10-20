@@ -1,0 +1,58 @@
+<views:LockWindow xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:views="using:BeProductive.App.Views"
+                  xmlns:vm="using:BeProductive.App.ViewModels"
+                  xmlns:core="using:BeProductive.Core.Sessions"
+                  x:Class="BeProductive.App.Views.NextBlockWindow"
+                  x:DataType="vm:NextBlockViewModel"
+                  Title="Be Productive"
+                  RequestedThemeVariant="Dark"
+                  Background="{StaticResource LockBackground}">
+
+  <StackPanel Spacing="30" MaxWidth="720" Margin="40" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <StackPanel Spacing="8">
+      <TextBlock Classes="eyebrow" Text="BREAK'S OVER" />
+      <TextBlock Classes="display" Text="Pick your next block." />
+      <TextBlock Classes="lead" Text="{Binding Progress}" />
+    </StackPanel>
+
+    <ItemsControl ItemsSource="{Binding Blocks}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="1" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:BlockChoice">
+          <Button Margin="0,0,12,0" Padding="20,18" HorizontalAlignment="Stretch" CornerRadius="10"
+                  Command="{Binding $parent[views:NextBlockWindow].((vm:NextBlockViewModel)DataContext).StartCommand}"
+                  CommandParameter="{Binding}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding Label}" FontSize="28" FontWeight="SemiBold" />
+              <TextBlock Classes="muted" Text="{Binding Caption}" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <StackPanel Spacing="10">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Classes="label" Text="Preset" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" MinWidth="220">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="core:Preset">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+      <TextBox Text="{Binding Note}" Watermark="What's this block about? (optional)" MaxLength="200" />
+    </StackPanel>
+
+    <StackPanel Spacing="8">
+      <TextBlock Classes="muted" Text="{Binding Countdown}" />
+      <TextBlock Classes="error" Text="{Binding App.Error}" IsVisible="{Binding App.Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+  </StackPanel>
+</views:LockWindow>

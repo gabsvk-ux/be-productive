@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BeProductive.App.ViewModels"
+        x:Class="BeProductive.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Be Productive settings"
+        Width="860" Height="680" MinWidth="700" MinHeight="520"
+        WindowStartupLocation="CenterScreen">
+
+  <DockPanel Margin="24">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,16">
+      <TextBlock Classes="title" Text="Settings" />
+      <TextBlock Classes="muted"
+                 Text="Stricter changes apply straight away. Looser ones (allowing an app, unblocking a site, turning on terminals, lowering a minimum) apply from tomorrow, so they can't be used to get out of today." />
+    </StackPanel>
+
+    <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,12,0,0">
+      <TextBlock Classes="error" Text="{Binding App.Error}" IsVisible="{Binding App.Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock Classes="message" Text="{Binding App.Message}" IsVisible="{Binding App.Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+
+    <TabControl>
+      <TabItem Header="Presets">
+        <Grid ColumnDefinitions="220,24,*" Margin="0,12,0,0">
+          <DockPanel>
+            <Button DockPanel.Dock="Bottom" Content="New preset" Command="{Binding NewPresetCommand}" HorizontalAlignment="Stretch" Margin="0,10,0,0" />
+            <ListBox ItemsSource="{Binding Presets}" SelectedItem="{Binding Selected}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:PresetEditor">
+                  <TextBlock Text="{Binding ListLabel}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+
+          <ScrollViewer Grid.Column="2" IsVisible="{Binding HasSelection}">
+            <StackPanel Spacing="14" DataContext="{Binding Selected}" x:DataType="vm:PresetEditor">
+              <Border Classes="panel" IsVisible="{Binding HasPending}">
+                <TextBlock Text="{Binding PendingText}" TextWrapping="Wrap" />
+              </Border>
+
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="Name" />
+                <TextBox Text="{Binding Name}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="Default block" />
+                <ComboBox ItemsSource="{Binding Blocks}" SelectedItem="{Binding DefaultBlock}" MinWidth="160">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:BlockChoice">
+                      <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="Allowed apps during focus (one program name per line, e.g. Code.exe)" />
+                <TextBox Text="{Binding AllowedApps}" AcceptsReturn="True" Height="100" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="Extra blocked sites (one domain per line, e.g. reddit.com)" />
+                <TextBox Text="{Binding BlockedDomains}" AcceptsReturn="True" Height="90" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Classes="label" Text="Folder shortcuts (one path per line)" />
+                <TextBox Text="{Binding Folders}" AcceptsReturn="True" Height="80" />
+              </StackPanel>
+
+              <StackPanel Spacing="4">
+                <CheckBox Content="Allow terminals (Windows Terminal, PowerShell, cmd)" IsChecked="{Binding AllowTerminal}" />
+                <CheckBox Content="Also allow them as administrator" IsChecked="{Binding AllowElevatedTerminal}" />
+                <TextBlock Classes="muted" Margin="28,0,0,0"
+                           Text="Handy for installing things while you set up. An admin terminal can stop Be Productive, so switch this off once you're done." />
+              </StackPanel>
+
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Classes="primary" Content="Save preset" Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).SavePresetCommand}" />
+                <Button Content="Delete" Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).DeletePresetCommand}" />
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Daily minimums">
+        <StackPanel Spacing="14" Margin="0,12,0,0" DataContext="{Binding Minimums}" x:DataType="vm:MinimumsEditor" HorizontalAlignment="Left">
+          <TextBlock Classes="muted" Text="Focus minutes needed each day before the laptop is free. 0 means no start screen that day." />
+          <Border Classes="panel" IsVisible="{Binding HasPending}">
+            <TextBlock Text="{Binding PendingText}" TextWrapping="Wrap" />
+          </Border>
+          <Grid ColumnDefinitions="140,160" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Text="Monday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Monday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+            <TextBlock Grid.Row="1" Text="Tuesday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Tuesday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+            <TextBlock Grid.Row="2" Text="Wednesday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding Wednesday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+            <TextBlock Grid.Row="3" Text="Thursday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Thursday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+            <TextBlock Grid.Row="4" Text="Friday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding Friday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+            <TextBlock Grid.Row="5" Text="Saturday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="5" Grid.Column="1" Value="{Binding Saturday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+            <TextBlock Grid.Row="6" Text="Sunday" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="6" Grid.Column="1" Value="{Binding Sunday}" Minimum="0" Maximum="960" Increment="10" FormatString="0" Margin="0,4" />
+          </Grid>
+          <Button Classes="primary" Content="Save minimums" HorizontalAlignment="Left"
+                  Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).SaveMinimumsCommand}" />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

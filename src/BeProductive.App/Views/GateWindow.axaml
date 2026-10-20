@@ -1,0 +1,120 @@
+<views:LockWindow xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:views="using:BeProductive.App.Views"
+                  xmlns:vm="using:BeProductive.App.ViewModels"
+                  xmlns:core="using:BeProductive.Core.Sessions"
+                  x:Class="BeProductive.App.Views.GateWindow"
+                  x:DataType="vm:GateViewModel"
+                  Title="Be Productive"
+                  RequestedThemeVariant="Dark"
+                  Background="{StaticResource LockBackground}">
+
+  <ScrollViewer>
+    <StackPanel Spacing="30" MaxWidth="760" Margin="40,48" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+      <StackPanel Spacing="8">
+        <TextBlock Classes="eyebrow" Text="BE PRODUCTIVE" />
+        <TextBlock Classes="display" Text="{Binding Heading}" />
+        <TextBlock Classes="lead" Text="{Binding Requirement}" />
+      </StackPanel>
+
+      <StackPanel Spacing="12">
+        <TextBlock Classes="label" Text="What are you working on?" />
+        <ListBox Classes="cards" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="core:Preset">
+              <StackPanel Spacing="4" Width="190">
+                <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" />
+                <TextBlock Classes="muted" Text="{Binding DefaultBlock, Converter={x:Static vm:Converters.BlockLabel}}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+
+      <StackPanel Spacing="12">
+        <TextBlock Classes="label" Text="How much focus today?" />
+        <WrapPanel>
+          <NumericUpDown Value="{Binding PlannedMinutesValue}" Minimum="{Binding MinimumValue}" Maximum="960" Increment="15"
+                         FormatString="0" Width="150" Margin="0,0,10,0" VerticalAlignment="Center" />
+          <TextBlock Text="minutes" VerticalAlignment="Center" Margin="0,0,20,0" />
+          <ItemsControl ItemsSource="{Binding QuickMinutes}" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:Int32">
+                <Button Classes="chip"
+                        Content="{Binding Converter={x:Static vm:Converters.Minutes}}"
+                        Command="{Binding $parent[views:GateWindow].((vm:GateViewModel)DataContext).ChooseMinutesCommand}"
+                        CommandParameter="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </WrapPanel>
+        <TextBlock Classes="muted" Text="{Binding Estimate}" />
+      </StackPanel>
+
+      <StackPanel Spacing="12">
+        <TextBlock Classes="label" Text="First block" />
+        <ListBox Classes="segments" ItemsSource="{Binding Blocks}" SelectedItem="{Binding SelectedBlock}">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:BlockChoice">
+              <StackPanel Spacing="2" Width="175">
+                <TextBlock Text="{Binding Label}" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Classes="muted" Text="{Binding Caption}" FontSize="12" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBox Text="{Binding Note}" Watermark="What's the first block about? (optional)" MaxLength="200" />
+      </StackPanel>
+
+      <StackPanel Spacing="10">
+        <Button Classes="primary" Content="Start focusing" Command="{Binding StartCommand}" HorizontalAlignment="Left" />
+        <TextBlock Classes="error" Text="{Binding App.Error}" IsVisible="{Binding App.Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Classes="message" Text="{Binding App.Message}" IsVisible="{Binding App.Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      </StackPanel>
+
+      <StackPanel Spacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="24">
+          <Button Classes="link" Content="{Binding PostponeCaption}" Command="{Binding TogglePostponeCommand}" IsEnabled="{Binding CanPostpone}" />
+          <Button Classes="link" Content="Emergency exit" Command="{Binding ToggleExitCommand}" />
+        </StackPanel>
+
+        <Border Classes="panel" IsVisible="{Binding ShowPostpone}">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Start later today. Until then the laptop is yours; at that time this screen comes back." TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBox Text="{Binding PostponeTime}" Watermark="HH:mm" Width="100" />
+              <Button Content="Postpone" Command="{Binding PostponeCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="panel" IsVisible="{Binding ShowExit}">
+          <StackPanel Spacing="10">
+            <TextBlock Text="A recovery code from your friend ends today's lock. Today will count as failed." TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBox Text="{Binding ExitCode}" Watermark="XXXX-XXXX-XXXX-XXXX" Width="240" />
+              <Button Content="Use code" Command="{Binding ExitCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+</views:LockWindow>
