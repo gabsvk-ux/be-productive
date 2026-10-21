@@ -2,7 +2,7 @@
 
 A personal focus app for Windows: until you've done your daily focus time, the laptop is limited to the apps and sites you need for work. See [docs/design.md](docs/design.md) for the full design.
 
-**Status: steps 1–3 and 5 of the [build order](docs/design.md#10-build-order).** So far there are:
+**Status: steps 1–5 of the [build order](docs/design.md#10-build-order).** So far there are:
 - recovery codes, dry-run mode and the safety net
 - the session engine (gate, pomodoro blocks, breaks, tracking)
 - the desktop app: start screen, dashboard, next-block prompt, notifications, settings, stats and tray icon
