@@ -44,6 +44,8 @@ public sealed class Enforcer(
     private bool anyApplied;
     private bool hostsApplied;
     private DateTimeOffset nextReassert = DateTimeOffset.MinValue;
+    private string? lastErrorKey;
+    private DateTimeOffset lastErrorAt;
 
     public void Apply(SessionStatus status, DateTimeOffset now)
     {
@@ -67,7 +69,7 @@ public sealed class Enforcer(
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Enforcement failed this tick");
+                LogFailure(exception, now);
             }
 
             lastApplied = plan;
@@ -104,6 +106,28 @@ public sealed class Enforcer(
 
         // Keep the lease ahead of expiry so a crash or hang still self-heals, but a healthy session never drops.
         changes.RenewLease(now + safetyNetOptions.Value.DefaultLease);
+    }
+
+    /// <summary>
+    /// Logs a tick failure, but only once a minute per distinct error, so a standing problem (such as the
+    /// service not having admin rights) doesn't fill the log with the same stack trace every tick.
+    /// </summary>
+    private void LogFailure(Exception exception, DateTimeOffset now)
+    {
+        var key = $"{exception.GetType().Name}:{exception.Message}";
+        if (key == lastErrorKey && now - lastErrorAt < TimeSpan.FromMinutes(1))
+            return;
+        lastErrorKey = key;
+        lastErrorAt = now;
+
+        if (exception is UnauthorizedAccessException)
+            logger.LogError(
+                "Enforcement can't change the system (access denied). The service must run with administrator " +
+                "rights: run its terminal as administrator, or install it with scripts/install.ps1 so it runs " +
+                "as SYSTEM. Nothing was changed. ({Message})",
+                exception.Message);
+        else
+            logger.LogError(exception, "Enforcement failed this tick");
     }
 
     /// <summary>Undo every applied change and forget our applied state. Safe to call when nothing is applied.</summary>
