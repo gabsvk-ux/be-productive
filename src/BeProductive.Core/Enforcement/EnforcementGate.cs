@@ -25,7 +25,7 @@ public sealed class EnforcementGate(IOptions<EnforcementOptions> options, AppPat
             var current = options.Value;
             if (current.DryRun)
                 return EnforcementMode.DryRun;
-            if (current.PanicFileEnabled && File.Exists(paths.PanicFile))
+            if (current.PanicFileEnabled && paths.PanicFiles.Any(SafeExists))
                 return EnforcementMode.Panic;
             return EnforcementMode.Live;
         }
@@ -46,5 +46,18 @@ public sealed class EnforcementGate(IOptions<EnforcementOptions> options, AppPat
 
         action();
         return true;
+    }
+
+    /// <summary>A panic check must never throw (e.g. an unreadable path), or enforcement couldn't be stopped.</summary>
+    private static bool SafeExists(string path)
+    {
+        try
+        {
+            return File.Exists(path);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

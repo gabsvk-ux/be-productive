@@ -4,8 +4,10 @@
     Undoes everything Be Productive has changed on this PC. The last resort when the app won't let go.
 
 .DESCRIPTION
-    1. Disables the BeProductive service (so it can't restart and re-lock) and stops it.
-       A clean stop already undoes its own changes.
+    0. Writes a panic file first, so a running service stops enforcing on its next tick and can't close
+       this PowerShell window before the script finishes. The panic files are removed again at the end.
+    1. Disables the BeProductive service (so it can't restart and re-lock) and stops it hard
+       (a clean stop first, then kills the process if it lingers).
     2. Undoes whatever is still listed in the change journal, newest first:
        registry values go back to what they were, keys the app created are deleted if empty,
        and the app's section is removed from the hosts file.
@@ -98,7 +100,21 @@ function Undo-Entry($entry) {
     }
 }
 
-# 1. The service
+# 0. Neuter enforcement immediately, before anything slow. Writing a panic file makes a running service
+#    stop killing processes and stop re-applying blocks on its next tick, so it can't close this very
+#    PowerShell window while the rest of the script runs. Two locations: the data dir and the world-writable
+#    Public folder (must match AppPaths.cs).
+Write-Step 'Signalling panic so the service stands down'
+$panicFiles = @(
+    (Join-Path $DataDirectory 'PANIC'),
+    (Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory') | Split-Path -Parent) 'BEPRODUCTIVE-PANIC.txt')
+)
+# CommonDesktopDirectory is C:\Users\Public\Desktop; its parent is C:\Users\Public, which AppPaths uses.
+foreach ($panic in $panicFiles) {
+    try { New-Item -ItemType File -Path $panic -Force | Out-Null } catch { }
+}
+
+# 1. The service. Stop it hard and early, so it can't keep enforcing while we undo its changes.
 $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
 if ($service) {
     if (-not $KeepServiceEnabled) {
@@ -108,14 +124,22 @@ if ($service) {
     if ($service.Status -ne 'Stopped') {
         Write-Step 'Stopping the service'
         try {
-            Stop-Service -Name $serviceName -Force
+            Stop-Service -Name $serviceName -Force -ErrorAction Stop
         } catch {
-            Write-Warning "Couldn't stop the service: $($_.Exception.Message). Undoing its changes anyway."
+            Write-Warning "Couldn't stop the service cleanly: $($_.Exception.Message). Killing it."
+        }
+        # Make sure it's really gone: a recovery action or a slow stop can leave it running.
+        Start-Sleep -Milliseconds 500
+        Get-Process -Name 'BeProductive.Service' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        if ((Get-Service -Name $serviceName -ErrorAction SilentlyContinue).Status -ne 'Stopped') {
+            Write-Warning 'The service is still reported as running; undoing its changes anyway.'
             $failures++
         }
     }
 } else {
     Write-Step 'The service isn''t installed'
+    # It may still be running from a dev "dotnet run"; stop that too.
+    Get-Process -Name 'BeProductive.Service' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
 # 2. The journal
@@ -166,6 +190,12 @@ foreach ($hive in Get-ChildItem -LiteralPath 'Registry::HKEY_USERS' -ErrorAction
 # 5. DNS
 Write-Step 'Flushing the DNS cache'
 & (Join-Path $env:SystemRoot 'System32\ipconfig.exe') /flushdns | Out-Null
+
+# 6. The panic files are no longer needed now the service is stopped and disabled. Leaving one behind would
+#    silently keep enforcement off if the service were ever re-enabled, so clean them up.
+foreach ($panic in $panicFiles) {
+    Remove-Item -LiteralPath $panic -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host ''
 if ($failures -eq 0) {

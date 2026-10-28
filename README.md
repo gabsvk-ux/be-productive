@@ -97,14 +97,14 @@ The rules (minimum per weekday, long breaks, the 04:00 day reset and so on) can 
 The app makes changes that could lock you out of your own PC, so every one of them goes through these safeguards:
 
 - **Dry run is on by default.** `Enforcement:DryRun` is `true`, so the service only *logs* what it would block. Turn it off only when testing enforcement on purpose.
-- **Panic file.** While `Enforcement:PanicFileEnabled` is `true`, creating `C:\ProgramData\BeProductive\PANIC` switches live enforcement off, and everything applied is undone within 30 s.
+- **Panic file.** While `Enforcement:PanicFileEnabled` is `true`, creating a panic file switches live enforcement off, and everything applied is undone within 30 s. Two locations work: `C:\ProgramData\BeProductive\PANIC`, and `C:\Users\Public\BEPRODUCTIVE-PANIC.txt` — the second needs no admin rights and can be made in Explorer (New → Text Document), so it's the reliable escape even when the service is blocking terminals.
 - **Change journal.** Every change is written to `C:\ProgramData\BeProductive\journal.json` *before* it's made, together with what was there before. The service undoes everything when it stops, at its next start after a crash, and whenever a change's lease (15 min by default) runs out without being renewed.
 - **`bp restore`** undoes everything listed in the journal.
-- **`scripts/restore.ps1`** is the last resort. Run it as admin and it disables and stops the service, undoes the journal, cleans the hosts file and flushes DNS:
+- **`scripts/restore.ps1`** is the last resort. Run it as admin: it writes a panic file first (so a running service stops enforcing and can't close its own window), then disables and hard-stops the service, undoes the journal, cleans the hosts file and the policies, and flushes DNS:
   ```powershell
   powershell -ExecutionPolicy Bypass -File .\scripts\restore.ps1
   ```
-- **Safe Mode** always works: the service doesn't run there.
+- **Safe Mode** always works: the service doesn't run there, so it's the safe place to run `restore.ps1` if a live session keeps closing your terminal.
 
 ## Recovery codes
 

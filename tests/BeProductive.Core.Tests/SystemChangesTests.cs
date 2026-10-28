@@ -190,4 +190,16 @@ public sealed class SystemChangesTests : IDisposable
         Assert.Equal(EnforcementMode.Live, Gates.Create(paths, panicFileEnabled: false).Mode);
         Assert.Equal(EnforcementMode.DryRun, Gates.Create(paths, dryRun: true).Mode);
     }
+
+    [Fact]
+    public void The_alternate_user_writable_panic_file_also_switches_enforcement_off()
+    {
+        var paths = directory.AppPaths;
+        Assert.Equal(EnforcementMode.Live, Gates.Create(paths).Mode);
+
+        File.WriteAllText(paths.PublicPanicFile, "");
+
+        Assert.Contains(paths.PublicPanicFile, paths.PanicFiles);
+        Assert.Equal(EnforcementMode.Panic, Gates.Create(paths).Mode);
+    }
 }
