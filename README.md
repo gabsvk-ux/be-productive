@@ -22,6 +22,7 @@ Enforcement (step 4) and the tamper-resistance layer (step 6) are built: during 
 | `tests/BeProductive.App.Tests` | Headless UI tests; they also save screenshots of every screen |
 | `scripts/restore.ps1` | Emergency undo. Keep a copy on a USB stick |
 | `scripts/install.ps1` | Dev helper to install the service, the app (started at sign-in) and the CLI |
+| `scripts/test-step6.ps1` | Checks the tamper-resistance features on an installed, live VM (run with a snapshot) |
 
 ## Getting started (Windows)
 
