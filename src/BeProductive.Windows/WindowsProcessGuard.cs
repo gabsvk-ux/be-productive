@@ -37,9 +37,10 @@ public sealed class WindowsProcessGuard : IProcessGuard
         if (session < 0)
             return [];
 
-        // Never police processes at the logon screen (before sign-in) or while the session is locked:
-        // the only things on screen then are the logon / lock-screen UI, and killing those blacks it out.
-        if (!WindowsUserSession.InteractiveSessionIsActive())
+        // Never police processes at the logon screen (before sign-in): the only things there are the logon
+        // UI, and killing those blacks out the login screen. While merely locked, a user is still signed in
+        // and the lock-screen UI is protected by the never-kill list below.
+        if (!WindowsUserSession.IsUserSignedIn())
             return [];
 
         var result = new List<RunningProcess>();
@@ -69,7 +70,7 @@ public sealed class WindowsProcessGuard : IProcessGuard
 
     public bool Kill(int pid)
     {
-        if (ProtectedPids.Contains(pid) || !WindowsUserSession.InteractiveSessionIsActive())
+        if (ProtectedPids.Contains(pid) || !WindowsUserSession.IsUserSignedIn())
             return false;
         try
         {
