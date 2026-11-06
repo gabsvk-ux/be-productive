@@ -92,19 +92,46 @@ bp exit <recovery code>          # end today's lock; the day counts as failed
 
 The rules (minimum per weekday, long breaks, the 04:00 day reset and so on) can be changed in the `Sessions` section of `settings.json`. See [docs/settings.example.json](docs/settings.example.json).
 
+## A day with it
+
+1. **First login of the day** → the full-screen start screen appears and can't be closed. Pick a preset (Uni, Programming…), choose how much focus to commit to (at least the minimum), pick the first block length, and **Start** — or **Postpone** to later today (3/week, until 20:00).
+2. **During a focus block** → only that preset's apps and sites work; distraction domains are blocked; Task Manager, cmd and other admin tools are blocked. The small dashboard shows the countdown and today's progress. You can **pause** for up to 10 minutes.
+3. **Break** → most things are allowed again; a non-dismissable prompt asks for the next block's length when the break ends (or the preset's default starts on its own after 60 s). You can **switch preset** during a break.
+4. **Done** → once you've banked the planned time, the laptop is free. You can **add extra time** (stoppable any time) to keep going.
+5. **Need out early?** → use a **recovery code** from your friend (`bp exit <code>` or the app). The day is marked failed.
+6. **Stats** → from the dashboard or tray: focus per day/preset, streaks, and counts of pauses, blocked app launches and tamper attempts.
+
+## Setting it up for real use
+
+Testing is dry-run and snapshots; a *real* install is different. Once you trust it:
+
+1. **Install it** as a service (don't use `dotnet run` for real use): `.\scripts\install.ps1` from an admin PowerShell. This runs the service as SYSTEM, starts the app at sign-in, hardens the service (restarts if killed, resists a casual stop), and makes uninstall require a recovery code.
+2. **Create `C:\ProgramData\BeProductive\settings.json`** from [docs/settings.example.json](docs/settings.example.json) and set the real-use switches:
+   - `Enforcement:DryRun` → **`false`** (actually block).
+   - `Enforcement:PanicFileEnabled` → **`false`** (remove the easy bypass — see *Safety first*).
+   - Fill in `RecoveryDelivery` (Resend) so new codes can reach your friend.
+   - Put Spotify in the presets that should allow it; turn off `AllowElevatedTerminal` once you're done installing things.
+3. **Set up recovery codes:** `bp codes init`, and give the printed codes to your friend. They're your everyday way out.
+4. **Strongly recommended:** make your daily account a **standard user** with a separate admin account, so stopping the service or editing the hosts file needs the admin password. Staying admin keeps the lock to willpower plus friction; a standard user makes it a real lock.
+5. **Keep `scripts\restore.ps1` on a USB stick** as the admin emergency undo.
+
+To remove everything later: `.\scripts\install.ps1 -Uninstall -Code <recovery code>`.
+
 ## Safety first
 
 The app makes changes that could lock you out of your own PC, so every one of them goes through these safeguards:
 
 - **Dry run is on by default.** `Enforcement:DryRun` is `true`, so the service only *logs* what it would block. Turn it off only when testing enforcement on purpose.
-- **Panic file.** While `Enforcement:PanicFileEnabled` is `true`, creating a panic file switches live enforcement off, and everything applied is undone within 30 s. Two locations work: `C:\ProgramData\BeProductive\PANIC`, and `C:\Users\Public\BEPRODUCTIVE-PANIC.txt` — the second needs no admin rights and can be made in Explorer (New → Text Document), so it's the reliable escape even when the service is blocking terminals.
-- **Change journal.** Every change is written to `C:\ProgramData\BeProductive\journal.json` *before* it's made, together with what was there before. The service undoes everything when it stops, at its next start after a crash, and whenever a change's lease (15 min by default) runs out without being renewed.
+- **Panic file — a *development* kill-switch, not a real-world escape.** While `Enforcement:PanicFileEnabled` is `true`, creating a panic file (`C:\ProgramData\BeProductive\PANIC`, or the no-admin `C:\Users\Public\BEPRODUCTIVE-PANIC.txt` you can make in Explorer) switches live enforcement off and undoes everything within 30 s. That is deliberately easy — so a bug can't trap you *while you're testing*. But on a real locked-down install it's a one-click bypass of the whole lock, which defeats the point. **For real daily use set `Enforcement:PanicFileEnabled: false`.** The service logs a loud warning at startup whenever enforcement is live with the panic file still enabled. With it off, the only ways out are the recovery code and `restore.ps1`/Safe Mode (below) — the friction you actually want.
+- **Change journal.** Every change is written to `C:\ProgramData\BeProductive\journal.json` *before* it's made, together with what was there before. The service undoes everything when it stops, at its next start after a crash, and whenever a change's lease (15 min by default) runs out without being renewed. This protects you even with the panic file off: if the service crashes or hangs, the lease expiry undoes everything.
 - **`bp restore`** undoes everything listed in the journal.
-- **`scripts/restore.ps1`** is the last resort. Run it as admin: it writes a panic file first (so a running service stops enforcing and can't close its own window), then disables and hard-stops the service, undoes the journal, cleans the hosts file and the policies, and flushes DNS:
+- **`scripts/restore.ps1`** is the admin emergency undo, and does **not** rely on the panic file. Run it as admin: it stops enforcement at once (kills the service process), resets the service's self-protection descriptor and recovery actions, disables and stops the service, undoes the journal, cleans the hosts file and the policies, and flushes DNS:
   ```powershell
   powershell -ExecutionPolicy Bypass -File .\scripts\restore.ps1
   ```
-- **Safe Mode** always works: the service doesn't run there, so it's the safe place to run `restore.ps1` if a live session keeps closing your terminal.
+- **Safe Mode** always works: the service doesn't run there, so it's the ultimate place to run `restore.ps1` if ever needed.
+
+Together these mean an escape always exists — the recovery code (your friend) for everyday use, and `restore.ps1` (admin, deliberate) for emergencies — without the panic file handing you a free bypass. That matches the design goal: *maximum friction for an admin*, not a wall.
 
 ## Recovery codes
 

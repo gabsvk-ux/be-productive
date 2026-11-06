@@ -100,11 +100,12 @@ function Undo-Entry($entry) {
     }
 }
 
-# 0. Neuter enforcement immediately, before anything slow. Writing a panic file makes a running service
-#    stop killing processes and stop re-applying blocks on its next tick, so it can't close this very
-#    PowerShell window while the rest of the script runs. Two locations: the data dir and the world-writable
-#    Public folder (must match AppPaths.cs).
-Write-Step 'Signalling panic so the service stands down'
+# 0. Neuter enforcement immediately, before anything slow, so the service can't close this very PowerShell
+#    window while the rest of the script runs. This does NOT depend on the panic file being enabled: killing
+#    the service process stops all enforcement at once (recovery actions are cleared in step 1 before this
+#    could trigger a restart). The panic file is written too, as a belt-and-braces measure when it is enabled.
+Write-Step 'Stopping enforcement immediately'
+Get-Process -Name 'BeProductive.Service' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 $panicFiles = @(
     (Join-Path $DataDirectory 'PANIC'),
     (Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory') | Split-Path -Parent) 'BEPRODUCTIVE-PANIC.txt')
