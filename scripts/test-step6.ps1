@@ -6,8 +6,11 @@
 .DESCRIPTION
     Run this in the test VM after installing (scripts\install.ps1) with Enforcement:DryRun = false.
     Take a VM snapshot first. Your in-session escape is the panic file; keep it enabled while testing.
-    Run it from a FREE state (not at the start-screen gate), or the lock may close this window; with -Code
-    it starts its own focus block in a terminal-allowing preset so this window survives.
+    You need a PowerShell window that the lock won't close. Admin tools are blocked whenever the laptop is
+    locked, so run this EITHER on a free day (set that weekday's minimum to 0 in settings.json, or after
+    you've finished the day's focus) OR from inside a focus block in a preset that allows terminals (plan
+    "programming" in the app first, then open PowerShell). With -Code the script keeps you in a
+    terminal-allowing block for the watchdog test and ends it afterwards.
 
     It runs, and reports PASS / FAIL / SKIP for:
       2. Service self-protection  - a casual Stop-Service is denied; a killed service restarts.

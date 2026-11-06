@@ -20,6 +20,10 @@ public sealed class WindowsProcessGuard : IProcessGuard
         "explorer", "dwm", "sihost", "ctfmon", "startmenuexperiencehost", "searchhost",
         "shellexperiencehost", "applicationframehost", "textinputhost", "runtimebroker",
         "fontdrvhost", "csrss", "winlogon", "lsass", "services", "svchost", "wininit", "smss",
+        // The logon / lock-screen / UAC / credential UI. Killing these blacks out the login or lock
+        // screen, which could stop you signing in — never touch them.
+        "logonui", "lockapp", "lockapphost", "consent", "credentialuihost", "credentialuibroker",
+        "userinit", "atbroker", "useroobebroker",
         "beproductive", "beproductive.service", "dotnet",
     };
 
@@ -31,6 +35,11 @@ public sealed class WindowsProcessGuard : IProcessGuard
     {
         var session = WindowsUserSession.ActiveSessionId();
         if (session < 0)
+            return [];
+
+        // Never police processes at the logon screen (before sign-in) or while the session is locked:
+        // the only things on screen then are the logon / lock-screen UI, and killing those blacks it out.
+        if (!WindowsUserSession.InteractiveSessionIsActive())
             return [];
 
         var result = new List<RunningProcess>();
@@ -60,7 +69,7 @@ public sealed class WindowsProcessGuard : IProcessGuard
 
     public bool Kill(int pid)
     {
-        if (ProtectedPids.Contains(pid))
+        if (ProtectedPids.Contains(pid) || !WindowsUserSession.InteractiveSessionIsActive())
             return false;
         try
         {
