@@ -82,4 +82,19 @@ public class StatsTests
         Assert.Equal((1, 1, 1), (stats.Pauses, stats.Postpones, stats.RecoveryExits));
         Assert.Equal(DayOutcome.Failed, stats.Days[^1].Outcome);
     }
+
+    [Fact]
+    public void Blocked_app_and_tamper_attempts_are_counted()
+    {
+        var harness = new EngineHarness();
+        harness.Store.RecordEvent(new SessionEvent(harness.Now, SessionEventKinds.BlockedApp, "steam"));
+        harness.Store.RecordEvent(new SessionEvent(harness.Now, SessionEventKinds.BlockedApp, "discord"));
+        harness.Store.RecordEvent(new SessionEvent(harness.Now, SessionEventKinds.TamperAttempt, "app-closed"));
+        var builder = new StatsBuilder(harness.Store, harness.Store, harness.Options, TimeZoneInfo.Utc);
+
+        var stats = builder.Build(harness.Engine.Snapshot(harness.Now), 7, harness.Now.AddSeconds(1));
+
+        Assert.Equal(2, stats.BlockedApps);
+        Assert.Equal(1, stats.TamperAttempts);
+    }
 }

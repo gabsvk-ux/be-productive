@@ -1,12 +1,22 @@
-# Handoff: enforcement — step 6 (step 4 now built)
+# Handoff: enforcement (steps 4 and 6 now built)
 
-This document is for whoever builds the remaining tamper-resistance layer (step 6). Steps 1–5
-of the [build order](design.md#10-build-order) are done, **including step 4 (enforcement itself)** —
-see `src/BeProductive.Core/Enforcement/` (`EnforcementPlanner`, `Enforcer`, `EnforcementPlan`) and
-the Windows `WindowsProcessGuard` / `WindowsEnforcementPolicies`. Step 6 is the part still left
-for a third party. The sections below on the seams and the must-not-break rules still apply; the
-step-4 how-to is kept as the reference for how enforcement already plugs in. It explains what exists, the seams it plugs into, exactly what
-to build, and the rules it must not break.
+**Update:** steps 1–6 of the [build order](design.md#10-build-order) are all built now, including
+step 6 (tamper resistance). This document is kept as the reference for how enforcement and the
+tamper-resistance layer plug in, and for the rules any further work must not break.
+
+Step 4 lives in `src/BeProductive.Core/Enforcement/` (`EnforcementPlanner`, `Enforcer`,
+`EnforcementPlan`) with the Windows `WindowsProcessGuard` / `WindowsEnforcementPolicies`.
+Step 6 is: the **watchdog** (`Watchdog` + `IAppLauncher`/`WindowsAppLauncher`, driven by
+`WatchdogWorker`), **tamper events** (`SessionEventKinds.TamperAttempt`, surfaced in stats),
+the **uninstall code gate** (`bp uninstall-authorize`, reusing `RecoveryCodeService`), and the
+service **self-protection** (recovery actions + a deny-stop security descriptor) wired in
+`scripts/install.ps1`, with `scripts/restore.ps1` resetting that descriptor first.
+The sections below on the seams and the must-not-break rules still apply. It explains what exists,
+the seams it plugs into, and the rules it must not break.
+
+**Not yet verified on real Windows** (compile-checked / logic-tested only): `WindowsAppLauncher`'s
+`CreateProcessAsUser`, the service security-descriptor SDDL and `sc failure` actions, and the
+uninstall-code gate end to end. Verify these in the VM.
 
 Read [design.md](design.md) first (the whole product) and the two research notes:
 [tamper resistance on an admin account](research/admin-tamper-resistance.md) and

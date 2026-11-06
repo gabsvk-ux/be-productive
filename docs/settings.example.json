@@ -12,6 +12,10 @@
     "AlwaysAllowedApps": [ "BeProductive", "SystemSettings", "Calculator", "SnippingTool", "Notepad" ],
     "TerminalApps": [ "WindowsTerminal", "powershell", "pwsh", "cmd", "conhost" ]
   },
+  "Watchdog": {
+    "Enabled": true,
+    "RelaunchBackoff": "00:00:05"
+  },
   "Sessions": {
     "DayStartsAt": "04:00:00",
     "LatestStart": "20:00:00",

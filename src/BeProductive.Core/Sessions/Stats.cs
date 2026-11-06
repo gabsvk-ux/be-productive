@@ -21,7 +21,8 @@ public sealed record StatsSnapshot(
     int Pauses,
     int Postpones,
     int RecoveryExits,
-    int BlockedApps);
+    int BlockedApps,
+    int TamperAttempts);
 
 public static class Streaks
 {

@@ -18,5 +18,6 @@ builder.Services.AddHostedService<SafetyNetWorker>();
 builder.Services.AddHostedService<RecoveryCodeWorker>();
 builder.Services.AddHostedService<SessionWorker>();
 builder.Services.AddHostedService<IpcServerWorker>();
+builder.Services.AddHostedService<WatchdogWorker>();
 
 builder.Build().Run();

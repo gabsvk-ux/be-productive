@@ -42,6 +42,23 @@ public sealed class SessionService(
         }
     }
 
+    /// <summary>The current day status, brought up to date. For the watchdog, which runs on its own timer.</summary>
+    public async Task<SessionStatus> SnapshotAsync(CancellationToken cancellationToken)
+    {
+        await sync.WaitAsync(cancellationToken);
+        try
+        {
+            var now = time.GetUtcNow();
+            var current = Prepare(now);
+            Save(current, now);
+            return current.Snapshot(now);
+        }
+        finally
+        {
+            sync.Release();
+        }
+    }
+
     public async Task<IpcResponse> HandleAsync(IpcRequest request, CancellationToken cancellationToken)
     {
         await sync.WaitAsync(cancellationToken);

@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.Configure<RecoveryDeliveryOptions>(configuration.GetSection(RecoveryDeliveryOptions.SectionName));
         services.Configure<SafetyNetOptions>(configuration.GetSection(SafetyNetOptions.SectionName));
         services.Configure<SessionOptions>(configuration.GetSection(SessionOptions.SectionName));
+        services.Configure<WatchdogOptions>(configuration.GetSection(WatchdogOptions.SectionName));
 
         services.AddSingleton<EnforcementGate>();
 
@@ -40,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRulesStore>(provider => provider.GetRequiredService<SqliteStore>());
         services.AddSingleton<Enforcer>();
         services.AddSingleton<IEnforcer>(provider => provider.GetRequiredService<Enforcer>());
+        services.AddSingleton<Watchdog>();
         services.AddSingleton<SessionService>();
         return services;
     }
@@ -49,6 +51,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IProcessGuard, NullProcessGuard>();
         services.AddSingleton<IEnforcementPolicies, NoEnforcementPolicies>();
+        services.AddSingleton<IAppLauncher, NullAppLauncher>();
         var platform = new UnsupportedPlatform();
         services.AddSingleton<IRegistry>(platform);
         services.AddSingleton<IHostsFile>(platform);

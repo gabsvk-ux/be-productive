@@ -47,6 +47,7 @@ try
         ["codes", "init"] => await CodesInit(),
         ["codes", "status"] => CodesStatus(),
         ["codes", "regenerate"] => await CodesRegenerate(),
+        ["uninstall-authorize", .. var parts] => await UninstallAuthorize(string.Join("", parts)),
         ["restore"] => Restore(),
         _ => Usage(),
     };
@@ -164,6 +165,34 @@ async Task<int> CodesRegenerate()
     return 0;
 }
 
+// Exit 0 = uninstall may proceed (no codes set up, or a valid code was given and consumed).
+// Exit 2 = a recovery code is required but none was given. Exit 1 = the code was wrong.
+async Task<int> UninstallAuthorize(string code)
+{
+    var recovery = services.GetRequiredService<RecoveryCodeService>();
+    if (!recovery.GetStatus().HasCodes)
+    {
+        Console.WriteLine("No recovery codes are set up; uninstall is allowed.");
+        return 0;
+    }
+
+    if (code.Length == 0)
+    {
+        Console.Error.WriteLine("A recovery code from your friend is required to uninstall. Run: bp uninstall-authorize <code>");
+        return 2;
+    }
+
+    var result = await recovery.RedeemAsync(code, CancellationToken.None);
+    if (result.Outcome != RedeemOutcome.Accepted)
+    {
+        Console.Error.WriteLine("That recovery code isn't valid or has already been used. Uninstall not authorized.");
+        return 1;
+    }
+
+    Console.WriteLine("Recovery code accepted. Uninstall is authorized.");
+    return 0;
+}
+
 int Restore()
 {
     var report = services.GetRequiredService<SystemChanges>().RestoreAll("`bp restore` was run");
@@ -197,6 +226,7 @@ int Usage()
           codes init                             Create the first set of recovery codes (shown once)
           codes status                           How many codes are left
           codes regenerate                       Email your friend a new set
+          uninstall-authorize <code>             Check a recovery code so the uninstaller can proceed
           restore                                Undo every change the app has made to this PC
         """);
     return 2;

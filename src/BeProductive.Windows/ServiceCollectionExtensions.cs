@@ -15,6 +15,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDnsCache, WindowsDnsCache>();
         services.AddSingleton<IProcessGuard, WindowsProcessGuard>();
         services.AddSingleton<IEnforcementPolicies, WindowsEnforcementPolicies>();
+        services.AddSingleton<IAppLauncher, WindowsAppLauncher>();
         return services;
     }
 }

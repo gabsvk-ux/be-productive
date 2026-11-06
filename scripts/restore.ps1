@@ -117,6 +117,11 @@ foreach ($panic in $panicFiles) {
 # 1. The service. Stop it hard and early, so it can't keep enforcing while we undo its changes.
 $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
 if ($service) {
+    # A hardened install denies Stop to administrators; reset the descriptor (admins keep WRITE_DAC) so we
+    # can stop it, and clear the recovery actions so it can't restart itself while we work.
+    Write-Step 'Resetting the service descriptor and recovery actions'
+    sc.exe sdset $serviceName 'D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)' | Out-Null
+    sc.exe failure $serviceName reset= 0 actions= '' | Out-Null
     if (-not $KeepServiceEnabled) {
         Write-Step 'Disabling the service so it stays off after a reboot'
         Set-Service -Name $serviceName -StartupType Disabled

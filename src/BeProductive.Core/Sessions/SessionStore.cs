@@ -39,6 +39,7 @@ public static class SessionEventKinds
     public const string RecoveryExit = "recovery-exit";
     public const string DayMissed = "day-missed";
     public const string BlockedApp = "blocked-app";
+    public const string TamperAttempt = "tamper-attempt";
 }
 
 /// <summary>Where the engine's state and its tracking records go.</summary>
