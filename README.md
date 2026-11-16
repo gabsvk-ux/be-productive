@@ -9,6 +9,8 @@ A personal focus app for Windows: until you've done your daily focus time, the l
 
 Enforcement (step 4) and the tamper-resistance layer (step 6) are built: during focus the service kills programs that aren't allowed, blocks distraction domains in the hosts file, and sets the Chrome and admin-tool policies; a **watchdog** relaunches the gate if it's killed (and logs it as a tamper attempt), the installed service **restarts if killed and resists a casual stop**, and **uninstalling needs a recovery code**. Everything still runs through the step-1 safety net and is **off by default** (`Enforcement:DryRun` is `true`). The spec and seams are in **[docs/handoff-enforcement.md](docs/handoff-enforcement.md)**. Future work (not in the build order): Linux port, a Chrome extension for path/video blocking, folder enforcement, challenge-response recovery.
 
+> **New here?** Read **[docs/HANDOFF.md](docs/HANDOFF.md)** for the full project handoff — decisions, architecture, what's verified, and what's left.
+
 ## Layout
 
 | Path | What it is |
