@@ -1,13 +1,13 @@
 # Be Productive
 
-A personal focus app for Windows: until you've done your daily focus time, the laptop is limited to the apps and sites you need for work. See [docs/design.md](docs/design.md) for the full design.
+A personal focus app for Windows (and, as a first untested-on-desktop port, Linux): until you've done your daily focus time, the laptop is limited to the apps and sites you need for work. See [docs/design.md](docs/design.md) for the full design.
 
 **Status: steps 1–6 of the [build order](docs/design.md#10-build-order) are built.** So far there are:
 - recovery codes, dry-run mode and the safety net
 - the session engine (gate, pomodoro blocks, breaks, tracking)
 - the desktop app: start screen, dashboard, next-block prompt, notifications, settings, stats and tray icon
 
-Enforcement (step 4) and the tamper-resistance layer (step 6) are built: during focus the service kills programs that aren't allowed, blocks distraction domains in the hosts file, and sets the Chrome and admin-tool policies; a **watchdog** relaunches the gate if it's killed (and logs it as a tamper attempt), the installed service **restarts if killed and resists a casual stop**, and **uninstalling needs a recovery code**. Everything still runs through the step-1 safety net and is **off by default** (`Enforcement:DryRun` is `true`). The spec and seams are in **[docs/handoff-enforcement.md](docs/handoff-enforcement.md)**. Future work (not in the build order): Linux port, a Chrome extension for path/video blocking, folder enforcement, challenge-response recovery.
+Enforcement (step 4) and the tamper-resistance layer (step 6) are built: during focus the service kills programs that aren't allowed, blocks distraction domains in the hosts file, and sets the Chrome and admin-tool policies; a **watchdog** relaunches the gate if it's killed (and logs it as a tamper attempt), the installed service **restarts if killed and resists a casual stop**, and **uninstalling needs a recovery code**. Everything still runs through the step-1 safety net and is **off by default** (`Enforcement:DryRun` is `true`). The spec and seams are in **[docs/handoff-enforcement.md](docs/handoff-enforcement.md)**. **A Linux port has been started: see [docs/linux.md](docs/linux.md).** Future work (not in the build order): a Chrome extension for path/video blocking, folder enforcement, challenge-response recovery.
 
 > **New here?** Read **[docs/HANDOFF.md](docs/HANDOFF.md)** for the full project handoff — decisions, architecture, what's verified, and what's left.
 
@@ -17,12 +17,15 @@ Enforcement (step 4) and the tamper-resistance layer (step 6) are built: during 
 |---|---|
 | `src/BeProductive.Core` | Everything not tied to one OS: the session engine, SQLite storage, the pipe protocol, recovery codes, the enforcement switch, the change journal and restore |
 | `src/BeProductive.Windows` | Windows implementations (registry, hosts file, DNS flush) |
+| `src/BeProductive.Linux` | Linux implementations (logind sessions, `/proc`, `.desktop` launchers, hosts file, Chrome JSON policies, `systemd-run` relaunch) — see [docs/linux.md](docs/linux.md) |
 | `src/BeProductive.Service` | The background service (a Windows Service): runs the session clock and answers the pipe |
 | `src/BeProductive.App` | The desktop app (Avalonia): start screen, dashboard, next-block prompt, settings, tray icon |
 | `src/BeProductive.Cli` | `bp`, a command-line tool: the same commands as the app, plus setup and safety |
 | `tests/BeProductive.Core.Tests` | Unit tests for everything in Core |
+| `tests/BeProductive.Linux.Tests` | Tests for the Linux platform layer, against a fake `/proc`, logind and `/etc` |
 | `tests/BeProductive.App.Tests` | Headless UI tests; they also save screenshots of every screen |
 | `scripts/restore.ps1` | Emergency undo. Keep a copy on a USB stick |
+| `scripts/linux/` | Linux `install.sh`, `restore.sh`, the systemd unit and the autostart entry |
 | `scripts/install.ps1` | Dev helper to install the service, the app (started at sign-in) and the CLI |
 | `scripts/test-step6.ps1` | Checks the tamper-resistance features on an installed, live VM (run with a snapshot) |
 

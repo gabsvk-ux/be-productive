@@ -84,11 +84,25 @@ public sealed class IpcServerWorker(SessionService sessions, ILogger<IpcServerWo
     }
 
     private static NamedPipeServerStream CreatePipe() =>
-        OperatingSystem.IsWindows()
-            ? CreateWindowsPipe()
-            : new NamedPipeServerStream(
-                IpcProtocol.PipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances,
-                PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        OperatingSystem.IsWindows() ? CreateWindowsPipe() : CreateUnixPipe();
+
+    /// <summary>
+    /// On Linux the pipe is a Unix socket. The service runs as root, so the socket is opened up to every local
+    /// user (the same as "Authenticated Users" on Windows) — connecting to a socket needs write permission.
+    /// </summary>
+    [UnsupportedOSPlatform("windows")]
+    private static NamedPipeServerStream CreateUnixPipe()
+    {
+        var name = IpcProtocol.PipeName;
+        var pipe = new NamedPipeServerStream(
+            name, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances,
+            PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        var socket = IpcProtocol.UnixSocketPath(name);
+        if (File.Exists(socket))
+            File.SetUnixFileMode(socket, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead |
+                UnixFileMode.GroupWrite | UnixFileMode.OtherRead | UnixFileMode.OtherWrite);
+        return pipe;
+    }
 
     /// <summary>
     /// The service runs as SYSTEM, so the pipe has to let signed-in users connect explicitly. The account

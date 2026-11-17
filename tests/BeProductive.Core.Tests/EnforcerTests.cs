@@ -24,6 +24,7 @@ public sealed class EnforcerTests : IDisposable
         AlwaysAllowedApps = ["BeProductive"],
         BrowserApp = "chrome",
         TerminalApps = ["powershell", "cmd"],
+        AdminToolApps = [],
         ReassertInterval = TimeSpan.FromSeconds(20),
     };
 

@@ -1,5 +1,6 @@
 using BeProductive.Core;
 using BeProductive.Service;
+using BeProductive.Linux;
 using BeProductive.Windows;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -8,9 +9,12 @@ var paths = AppPaths.FromConfiguration(builder.Configuration);
 builder.Configuration.AddJsonFile(paths.SettingsFile, optional: true, reloadOnChange: false);
 
 builder.Services.AddWindowsService(options => options.ServiceName = "BeProductive");
+builder.Services.AddSystemd();
 builder.Services.AddBeProductiveCore(builder.Configuration, paths);
 if (OperatingSystem.IsWindows())
     builder.Services.AddWindowsPlatform();
+else if (OperatingSystem.IsLinux())
+    builder.Services.AddLinuxPlatform();
 else
     builder.Services.AddUnsupportedPlatform();
 

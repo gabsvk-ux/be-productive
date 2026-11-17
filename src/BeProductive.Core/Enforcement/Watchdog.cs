@@ -46,6 +46,13 @@ public sealed class Watchdog(
                 return;
             }
 
+            // Nobody at the screen (the login screen): there's no one to show the gate to. Not a tamper attempt.
+            if (!launcher.IsUserSignedIn())
+            {
+                seenRunning = false;
+                return;
+            }
+
             if (launcher.IsRunning())
             {
                 seenRunning = true;

@@ -91,7 +91,26 @@ public sealed class ServiceUnavailableException(string message) : Exception(mess
 /// <summary>One JSON request line in, one JSON response line out, over a local named pipe.</summary>
 public static class IpcProtocol
 {
-    public const string PipeName = "BeProductive";
+    /// <summary>The Windows pipe name, and the fallback socket name elsewhere.</summary>
+    public const string DefaultPipeName = "BeProductive";
+
+    /// <summary>Where the installed Linux service puts its socket (systemd's RuntimeDirectory=be-productive).</summary>
+    public const string LinuxRuntimeDirectory = "/run/be-productive";
+
+    /// <summary>
+    /// The pipe to use. On Windows it's the named pipe. On Linux and macOS .NET pipes are Unix sockets: the
+    /// installed service uses <c>/run/be-productive/be-productive.sock</c> (a full path is used as-is), and a
+    /// development run, where that directory doesn't exist, falls back to a socket in the temp directory.
+    /// <c>BEPRODUCTIVE_PIPE</c> overrides both.
+    /// </summary>
+    public static string PipeName =>
+        Environment.GetEnvironmentVariable("BEPRODUCTIVE_PIPE") is { Length: > 0 } custom ? custom
+        : !OperatingSystem.IsWindows() && Directory.Exists(LinuxRuntimeDirectory) ? Path.Combine(LinuxRuntimeDirectory, "be-productive.sock")
+        : DefaultPipeName;
+
+    /// <summary>The socket file behind <see cref="PipeName"/> on Unix (mirrors how .NET maps pipe names to sockets).</summary>
+    public static string UnixSocketPath(string pipeName) =>
+        Path.IsPathRooted(pipeName) ? pipeName : Path.Combine(Path.GetTempPath(), "CoreFxPipe_" + pipeName);
 
     public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Json.CompactOptions);
 

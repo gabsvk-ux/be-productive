@@ -1,0 +1,28 @@
+[Unit]
+Description=Be Productive focus service
+Documentation=file:///opt/be-productive/docs/linux.md
+After=network-online.target systemd-logind.service
+Wants=network-online.target
+
+[Service]
+# The service tells systemd when it's ready (Microsoft.Extensions.Hosting.Systemd).
+Type=notify
+ExecStart=/opt/be-productive/Service/BeProductive.Service
+WorkingDirectory=/opt/be-productive/Service
+# Restart if killed: the Linux counterpart of `sc failure` on Windows.
+Restart=always
+RestartSec=3
+# /run/be-productive holds the socket the app and `bp` connect to (see IpcProtocol.PipeName).
+RuntimeDirectory=be-productive
+RuntimeDirectoryMode=0755
+# The data directory (/var/lib/be-productive). Readable by everyone, as C:\ProgramData is on Windows, so
+# `bp status` works without sudo; only root can write it.
+StateDirectory=be-productive
+StateDirectoryMode=0755
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+Environment=DOTNET_NOLOGO=1
+# Give the safety net time to undo everything on stop.
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -17,6 +17,26 @@ public static partial class Sound
     {
         if (OperatingSystem.IsWindows())
             MessageBeep(type);
+        else if (OperatingSystem.IsLinux())
+            PlayFreedesktop(type == Asterisk ? "complete" : "dialog-warning");
+    }
+
+    /// <summary>
+    /// Plays a sound from the desktop's sound theme with canberra-gtk-play (installed with GNOME and most
+    /// desktops), without waiting for it. No sound if it isn't installed — a missing chime is never an error.
+    /// </summary>
+    private static void PlayFreedesktop(string soundId)
+    {
+        try
+        {
+            var start = new System.Diagnostics.ProcessStartInfo("canberra-gtk-play") { UseShellExecute = false };
+            start.ArgumentList.Add("--id=" + soundId);
+            System.Diagnostics.Process.Start(start)?.Dispose();
+        }
+        catch
+        {
+            // Not installed, or no sound server: stay quiet.
+        }
     }
 
     [LibraryImport("user32.dll")]

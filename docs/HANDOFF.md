@@ -4,7 +4,8 @@ A complete handoff for anyone (human or AI) picking this project up. It covers w
 decision made, the architecture, how it's built and tested, what's verified vs not, the bugs found and fixed,
 how to run and set it up, and what's left. Read this top to bottom and you have the whole context.
 
-Last updated after step 6 (tamper resistance) and the lock-screen bug fixes.
+Last updated after the start of the **Linux port** (see §11 and [linux.md](linux.md)). Before that: step 6
+(tamper resistance) and the lock-screen bug fixes.
 
 ---
 
@@ -19,10 +20,11 @@ restricted to the apps and sites you need for work.
   friction**, not perfect prevention. The research concluded ~5–10 minutes of deliberate, elevated effort is
   the realistic ceiling for an admin, and the app aims to make casual/impulsive bypass much harder than that.
 - **Repo:** `gabsvk-ux/be-productive` on GitHub.
-- **Working branch:** `claude/desktop-distraction-blocker-1hktob`. **All work is on this branch**; the default
-  branch does not contain it. No PR has been opened (don't open one unless asked).
-- **Build/test:** `dotnet build` and `dotnet test` from the repo root. **Currently 142 tests, all passing**
-  (118 Core + 24 App). Clean build, working tree clean, everything pushed.
+- **Working branches:** Windows steps 1–6 are on `claude/desktop-distraction-blocker-1hktob`. The Linux port
+  continues from there on `claude/practical-hamilton-h96im5`, which contains all of it. The default branch
+  contains neither. No PR has been opened (don't open one unless asked).
+- **Build/test:** `dotnet build` and `dotnet test` from the repo root. **Currently 194 tests, all passing**
+  (122 Core + 48 Linux + 24 App). Clean build, working tree clean, everything pushed.
 
 ---
 
@@ -73,16 +75,18 @@ restricted to the apps and sites you need for work.
 
 ## 3. Architecture
 
-Five projects + two test projects (`BeProductive.sln`), .NET 8, C#.
+Six projects + three test projects (`BeProductive.sln`), .NET 8, C#.
 
 | Project | Role |
 |---|---|
 | `src/BeProductive.Core` | OS-agnostic: the session engine, SQLite storage, the pipe (IPC) protocol, recovery codes, the enforcement planner/enforcer/watchdog, and the safety net (change journal + restore + the enforcement gate). No Windows APIs. |
 | `src/BeProductive.Windows` | Windows implementations behind Core interfaces: registry, hosts file, DNS flush, process guard, enforcement policies, app launcher, user-session/SID. |
+| `src/BeProductive.Linux` | Linux implementations of the same interfaces: logind sessions, `/proc`, `.desktop` launcher scan, `/etc/hosts`, Chrome JSON policy files (as `IRegistry`), `systemd-run` relaunch. See [linux.md](linux.md). |
 | `src/BeProductive.Service` | The background service (a Windows Service, runs as **SYSTEM** when installed). Hosts five workers (below). |
 | `src/BeProductive.App` | The Avalonia desktop app: gate, dashboard, next-block prompt, settings, stats, notifications, tray icon. A pipe client. |
 | `src/BeProductive.Cli` | `bp` — the same day commands as the app plus setup/safety (`codes`, `stats`, `restore`, `uninstall-authorize`). |
 | `tests/BeProductive.Core.Tests` | 118 unit tests (engine, enforcement, safety net, recovery, stats, rules, SQLite, watchdog). |
+| `tests/BeProductive.Linux.Tests` | 48 tests for the Linux layer against a fake root (`/proc`, logind files, `.desktop` files, `/etc`), including a full safety-net round trip on the JSON policy files. |
 | `tests/BeProductive.App.Tests` | 24 headless Avalonia tests; they also render screenshots into `docs/screenshots/`. |
 
 ### The core idea
@@ -292,6 +296,44 @@ Windows specifics are based on — note Tier-3 tamper measures are intentionally
 ## 10. What's left / future (none committed to)
 
 - **Finish the Windows live verification** in §5 — the only outstanding work on the current feature set.
-- Future, explicitly deferred: Linux port; a Chrome extension for path/video-level blocking; folder
+  Also check the one Windows change made during the Linux work: `WindowsAppLauncher.IsUserSignedIn` (the
+  watchdog now waits quietly at the login screen instead of logging a failed relaunch every 5 s).
+- **Linux port**: started; see §11.
+- Future, explicitly deferred: a Chrome extension for path/video-level blocking; folder
   enforcement (folders are shortcuts only today); challenge-response recovery (friend approves from phone);
   a hard blocklist for breaks (empty today). None are planned or scheduled.
+
+---
+
+## 11. The Linux port (started)
+
+Full details, the Windows→Linux mapping and the known gaps are in **[linux.md](linux.md)**. In short:
+
+- **New project `BeProductive.Linux`** implements every platform interface. It's wired in `Service` and `Cli`
+  `Program.cs` with `AddLinuxPlatform()` when `OperatingSystem.IsLinux()`. The service also calls
+  `AddSystemd()` (systemd `Type=notify`).
+- **Chrome policies on Linux are JSON files**, presented to `SystemChanges` through `IRegistry`
+  (`JsonPolicyFiles`, key paths like `FILE\etc\opt\chrome\policies\managed\be-productive.json`), so the
+  journal, lease and undo work unchanged and the journal format is the same.
+- **Process policing is deliberately narrower on Linux**: only processes that match an installed `.desktop`
+  launcher (or a configured terminal / admin tool / the browser) are candidates, on top of a never-kill list.
+  Nothing is policed at the login screen (logind `greeter`) or without a graphical session.
+- **Core changes, all OS-neutral and tested:** `EnforcementOptions` defaults are per OS. There is a new
+  `AdminToolApps` list, killed by name while admin tools are blocked; it's empty on Windows and holds the
+  system monitors on Linux. `IpcProtocol.PipeName` uses `/run/be-productive/be-productive.sock` when that
+  directory exists, and the server makes the socket 0666. `IAppLauncher.IsUserSignedIn` was added (default
+  `true`) and the watchdog waits while it's false.
+- **Scripts:** `scripts/linux/install.sh` (publish to `/opt/be-productive`, systemd unit, XDG autostart, `bp`
+  link, settings with DryRun on, `--uninstall --code`) and `scripts/linux/restore.sh` (bash + coreutils only,
+  panic-independent, `--root` for a live USB).
+
+**Verified in a Linux container (as root, no desktop):** live blocking writes the hosts section and both
+Chrome policy files and journals 9 changes. Stopping the service restores `/etc/hosts` byte for byte and
+removes our policy files, leaving other policy files alone. After `kill -9`, the next start undoes the
+leftovers and the stale socket doesn't block it. `restore.sh` recovers a crashed live install. The real app ran
+under Xvfb (X11), connected over the socket and showed the gate (`docs/screenshots/linux-gate.png`). The
+published output has its apphosts and native Skia.
+
+**Not verified yet (needs a real Linux desktop):** process killing and the never-kill list against a real
+GNOME/KDE session; the watchdog relaunch through `systemd-run --user --machine=user@`; the fullscreen gate
+under native Wayland; `install.sh` end to end on a systemd machine (the container has no systemd).

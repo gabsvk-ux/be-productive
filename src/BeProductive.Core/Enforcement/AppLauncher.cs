@@ -6,6 +6,12 @@ namespace BeProductive.Core.Enforcement;
 /// </summary>
 public interface IAppLauncher
 {
+    /// <summary>
+    /// Is someone signed in at the screen to show the app to? At the login screen there isn't, so the watchdog
+    /// waits instead of failing a launch every few seconds. Launchers that can't tell say yes.
+    /// </summary>
+    bool IsUserSignedIn() => true;
+
     /// <summary>Is the app running in the signed-in user's session right now?</summary>
     bool IsRunning();
 

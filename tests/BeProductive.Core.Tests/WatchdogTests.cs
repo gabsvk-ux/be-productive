@@ -35,6 +35,29 @@ public sealed class WatchdogTests : IDisposable
     }
 
     [Fact]
+    public void Nothing_is_launched_or_recorded_while_nobody_is_signed_in()
+    {
+        var watchdog = Create();
+        launcher.Running = true;
+        watchdog.Tick(Status(Restriction.Gate), now);
+
+        // Signing out ends the app; that's not a tamper attempt, and there's nobody to relaunch it for.
+        launcher.Running = false;
+        launcher.SignedIn = false;
+        Advance(TimeSpan.FromSeconds(10));
+        watchdog.Tick(Status(Restriction.Gate), now);
+
+        Assert.Equal(0, launcher.Launches);
+        Assert.Empty(store.Events);
+
+        launcher.SignedIn = true;
+        Advance(TimeSpan.FromSeconds(10));
+        watchdog.Tick(Status(Restriction.Gate), now);
+        Assert.Equal(1, launcher.Launches);
+        Assert.Empty(store.Events);
+    }
+
+    [Fact]
     public void A_missing_app_is_launched_while_locked()
     {
         launcher.Running = false;
@@ -139,6 +162,10 @@ internal sealed class FakeAppLauncher : IAppLauncher
     public int Launches { get; private set; }
 
     public bool IsRunning() => Running;
+
+    public bool SignedIn { get; set; } = true;
+
+    public bool IsUserSignedIn() => SignedIn;
 
     /// <summary>When false, a launch doesn't keep the app up (simulates an immediate crash loop).</summary>
     public bool LaunchKeepsRunning { get; set; } = true;

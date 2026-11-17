@@ -11,6 +11,7 @@ public class EnforcementPlannerTests
         AlwaysAllowedApps = ["BeProductive", "Notepad"],
         BrowserApp = "chrome",
         TerminalApps = ["WindowsTerminal", "powershell", "cmd"],
+        AdminToolApps = [],
     };
 
     private EnforcementPlan Build(SessionStatus status, Preset? preset) => new EnforcementPlanner(options).Build(status, preset);
@@ -83,6 +84,48 @@ public class EnforcementPlannerTests
 
         Assert.Equal(KillMode.None, plan.KillMode);
         Assert.Empty(plan.BlockedApps);
+    }
+
+    [Fact]
+    public void Admin_tool_apps_are_killed_in_breaks_while_admin_tools_are_blocked_even_in_a_terminal_preset()
+    {
+        options.AdminToolApps = ["gnome-system-monitor"];
+
+        var blocked = Build(Status(Restriction.Break, admin: true), Preset(terminals: true));
+        var free = Build(Status(Restriction.Break, admin: false), Preset(terminals: true));
+
+        Assert.Equal(KillMode.BlocklistOnly, blocked.KillMode);
+        Assert.Equal(["gnome-system-monitor"], blocked.BlockedApps);
+        Assert.Equal(KillMode.None, free.KillMode);
+    }
+
+    [Fact]
+    public void Admin_tool_apps_are_never_allowed_in_focus_while_admin_tools_are_blocked()
+    {
+        options.AdminToolApps = ["gnome-system-monitor"];
+        var preset = Preset();
+        preset.AllowedApps.Add("gnome-system-monitor");
+
+        Assert.DoesNotContain("gnome-system-monitor", Build(Status(Restriction.Focus, admin: true), preset).AllowedApps);
+        Assert.Contains("gnome-system-monitor", Build(Status(Restriction.Focus, admin: false), preset).AllowedApps);
+    }
+
+    [Fact]
+    public void The_default_app_lists_match_the_operating_system()
+    {
+        var defaults = new EnforcementOptions();
+
+        if (OperatingSystem.IsLinux())
+        {
+            Assert.Contains("gnome-terminal-server", defaults.TerminalApps);
+            Assert.Contains("gnome-system-monitor", defaults.AdminToolApps);
+            Assert.DoesNotContain("powershell", defaults.TerminalApps);
+        }
+        else
+        {
+            Assert.Contains("powershell", defaults.TerminalApps);
+            Assert.Empty(defaults.AdminToolApps);
+        }
     }
 
     [Fact]

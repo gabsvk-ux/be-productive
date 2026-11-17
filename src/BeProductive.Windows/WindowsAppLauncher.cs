@@ -27,6 +27,8 @@ public sealed partial class WindowsAppLauncher : IAppLauncher
         appPath = ResolveAppPath(configuration);
     }
 
+    public bool IsUserSignedIn() => WindowsUserSession.IsUserSignedIn();
+
     public bool IsRunning()
     {
         var session = WindowsUserSession.ActiveSessionId();

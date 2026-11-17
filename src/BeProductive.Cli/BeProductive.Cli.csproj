@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BeProductive.Core\BeProductive.Core.csproj" />
     <ProjectReference Include="..\BeProductive.Windows\BeProductive.Windows.csproj" />
+    <ProjectReference Include="..\BeProductive.Linux\BeProductive.Linux.csproj" />
   </ItemGroup>
 
 </Project>

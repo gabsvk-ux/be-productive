@@ -6,6 +6,7 @@ using BeProductive.Core.Ipc;
 using BeProductive.Core.Recovery;
 using BeProductive.Core.SafetyNet;
 using BeProductive.Core.Sessions;
+using BeProductive.Linux;
 using BeProductive.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,8 @@ builder.Configuration.AddJsonFile(paths.SettingsFile, optional: true, reloadOnCh
 builder.Services.AddBeProductiveCore(builder.Configuration, paths);
 if (OperatingSystem.IsWindows())
     builder.Services.AddWindowsPlatform();
+else if (OperatingSystem.IsLinux())
+    builder.Services.AddLinuxPlatform();
 else
     builder.Services.AddUnsupportedPlatform();
 

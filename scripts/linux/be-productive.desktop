@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Be Productive
+Comment=Plan the day and keep focus sessions focused
+Exec=/opt/be-productive/App/BeProductive
+Icon=alarm-symbolic
+Terminal=false
+Categories=Utility;
+X-GNOME-Autostart-enabled=true
+X-GNOME-AutoRestart=true
+NoDisplay=false

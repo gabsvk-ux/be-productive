@@ -34,6 +34,9 @@ public sealed class EnforcementPlanner(EnforcementOptions options)
         if (preset is { AllowTerminal: true })
             foreach (var terminal in options.TerminalApps)
                 allowed.Add(Normalize(terminal));
+        if (status.AdminToolsBlocked)
+            foreach (var tool in options.AdminToolApps)
+                allowed.Remove(Normalize(tool));
 
         var domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var domain in options.GlobalBlockedDomains)
@@ -58,6 +61,9 @@ public sealed class EnforcementPlanner(EnforcementOptions options)
         if (status.AdminToolsBlocked && preset is not { AllowTerminal: true })
             foreach (var terminal in options.TerminalApps)
                 blocked.Add(Normalize(terminal));
+        if (status.AdminToolsBlocked)
+            foreach (var tool in options.AdminToolApps)
+                blocked.Add(Normalize(tool));
 
         return new EnforcementPlan(
             Locked: true,
