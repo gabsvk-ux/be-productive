@@ -128,6 +128,13 @@ safe to run.
 - **Tamper events** (`SessionEventKinds.TamperAttempt`) surface in stats alongside blocked-app counts.
 - **Uninstall needs a code**: `bp uninstall-authorize` reuses `RecoveryCodeService`; `install.ps1 -Uninstall`
   requires a valid code when codes are set up.
+- **Config hardening (armed install).** Editing `settings.json` can't weaken a real install. When the
+  service runs as an installed Windows service it is *armed* (`EnforcementArming`, set from
+  `WindowsServiceHelpers.IsWindowsService()`): `EnforcementGate` ignores `DryRun` and the panic file, so
+  the config can only make the lock stricter, never turn it off. A console/dev run stays unarmed so DryRun
+  and the panic file still work. `install.ps1` also `icacls`-locks the data directory to read-only for the
+  signed-in user (a standard-user account then can't edit the config or drop a panic file without the admin
+  password), and `ConfigWatchWorker` records a tamper attempt if `settings.json` changes while running.
 - **Service self-protection** (in `install.ps1`): `sc failure` recovery actions (restart if killed) + a
   security descriptor denying Stop/Pause/Change-config to administrators (they keep WRITE_DAC so it can be
   reset). `restore.ps1` resets the descriptor + recovery actions before stopping, so recovery always works.
@@ -182,6 +189,7 @@ snapshots).**
 - `restore.ps1` recovering a **hardened** install.
 - The lock-screen / boot-login fix (Win+L shows a normal lock screen; blocking resumes after a reboot).
 - Resend email delivery of recovery codes against the real API.
+- The armed-install config hardening and the data-directory ACL lockdown (`install.ps1` icacls).
 
 **The step-6 live test checklist** is in `scripts/test-step6.ps1` (tests 1–3 automated; test 4, `restore.ps1`,
 manual). The README's "Setting it up for real use" and "Safety first" sections are the operational guide.

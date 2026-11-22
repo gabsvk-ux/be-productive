@@ -116,6 +116,7 @@ internal sealed class FakeDelivery : IRecoveryCodeDelivery
 
 internal static class Gates
 {
-    public static EnforcementGate Create(AppPaths paths, bool dryRun = false, bool panicFileEnabled = true) =>
-        new(Options.Create(new EnforcementOptions { DryRun = dryRun, PanicFileEnabled = panicFileEnabled }), paths, NullLogger<EnforcementGate>.Instance);
+    public static EnforcementGate Create(AppPaths paths, bool dryRun = false, bool panicFileEnabled = true, bool armed = false) =>
+        new(Options.Create(new EnforcementOptions { DryRun = dryRun, PanicFileEnabled = panicFileEnabled }),
+            new EnforcementArming(armed), paths, NullLogger<EnforcementGate>.Instance);
 }

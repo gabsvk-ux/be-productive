@@ -5,6 +5,7 @@ using BeProductive.Core.Sessions;
 using BeProductive.Core.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace BeProductive.Core;
@@ -23,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.Configure<SessionOptions>(configuration.GetSection(SessionOptions.SectionName));
         services.Configure<WatchdogOptions>(configuration.GetSection(WatchdogOptions.SectionName));
 
+        services.TryAddEnforcementArming();
         services.AddSingleton<EnforcementGate>();
 
         services.AddHttpClient();
@@ -45,6 +47,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SessionService>();
         return services;
     }
+
+    /// <summary>Registers the disarmed default unless the host already registered an armed one.</summary>
+    private static void TryAddEnforcementArming(this IServiceCollection services) =>
+        services.TryAddSingleton(EnforcementArming.Disarmed);
 
     /// <summary>For systems that have no platform implementation yet. Dry runs still work.</summary>
     public static IServiceCollection AddUnsupportedPlatform(this IServiceCollection services)

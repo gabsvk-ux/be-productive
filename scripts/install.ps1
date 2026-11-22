@@ -93,6 +93,14 @@ New-Service -Name $serviceName -BinaryPathName "`"$serviceBinary`"" -DisplayName
 sc.exe failure $serviceName reset= 86400 actions= restart/5000/restart/5000/restart/5000 | Out-Null
 sc.exe sdset $serviceName $lockedSddl | Out-Null
 
+# Lock down the data directory so the signed-in user can't edit settings.json (to re-enable DryRun/panic) or
+# drop a panic file. SYSTEM and Administrators keep full control; everyone else gets read-only. With a
+# STANDARD-USER daily account this fully blocks edits; with an admin account editing then needs elevation.
+# (Enforcement is also "armed" when installed, so even an edited config can't weaken the lock - belt and braces.)
+$dataDirectory = Join-Path $env:ProgramData 'BeProductive'
+New-Item -ItemType Directory -Path $dataDirectory -Force | Out-Null
+icacls $dataDirectory /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'Administrators:(OI)(CI)F' 'Users:(OI)(CI)RX' | Out-Null
+
 Start-Service -Name $serviceName
 
 $appBinary = Join-Path $installDirectory 'App\BeProductive.exe'

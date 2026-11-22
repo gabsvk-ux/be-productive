@@ -16,13 +16,28 @@ public enum EnforcementMode
 }
 
 /// <summary>The single switch every enforcement action goes through.</summary>
-public sealed class EnforcementGate(IOptions<EnforcementOptions> options, AppPaths paths, ILogger<EnforcementGate> logger)
+public sealed class EnforcementGate(IOptions<EnforcementOptions> options, EnforcementArming arming, AppPaths paths, ILogger<EnforcementGate> logger)
 {
+    private int warnedArmed;
+
     public EnforcementMode Mode
     {
         get
         {
             var current = options.Value;
+
+            // An armed install never lets the config weaken the lock: DryRun and the panic file are ignored,
+            // so editing settings.json or dropping a panic file can't turn enforcement off. The only ways out
+            // of a live lock are a recovery code or scripts/restore.ps1 (admin) / Safe Mode.
+            if (arming.Armed)
+            {
+                if ((current.DryRun || (current.PanicFileEnabled && paths.PanicFiles.Any(SafeExists))) && Interlocked.Exchange(ref warnedArmed, 1) == 0)
+                    logger.LogWarning(
+                        "This is an armed (installed) service, so DryRun and the panic file are IGNORED. " +
+                        "Enforcement stays live; use a recovery code or restore.ps1 to end a lock.");
+                return EnforcementMode.Live;
+            }
+
             if (current.DryRun)
                 return EnforcementMode.DryRun;
             if (current.PanicFileEnabled && paths.PanicFiles.Any(SafeExists))

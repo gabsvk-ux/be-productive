@@ -202,4 +202,19 @@ public sealed class SystemChangesTests : IDisposable
         Assert.Contains(paths.PublicPanicFile, paths.PanicFiles);
         Assert.Equal(EnforcementMode.Panic, Gates.Create(paths).Mode);
     }
+
+    [Fact]
+    public void An_armed_install_ignores_dry_run_and_the_panic_file_from_config()
+    {
+        var paths = directory.AppPaths;
+        File.WriteAllText(paths.PanicFile, "");
+
+        // Disarmed (dev/console): config still turns enforcement off.
+        Assert.Equal(EnforcementMode.DryRun, Gates.Create(paths, dryRun: true).Mode);
+        Assert.Equal(EnforcementMode.Panic, Gates.Create(paths).Mode);
+
+        // Armed (installed service): editing settings.json or dropping a panic file can't weaken the lock.
+        Assert.Equal(EnforcementMode.Live, Gates.Create(paths, dryRun: true, armed: true).Mode);
+        Assert.Equal(EnforcementMode.Live, Gates.Create(paths, armed: true).Mode);
+    }
 }
