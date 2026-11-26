@@ -190,6 +190,7 @@ snapshots).**
 - The lock-screen / boot-login fix (Win+L shows a normal lock screen; blocking resumes after a reboot).
 - Resend email delivery of recovery codes against the real API.
 - The armed-install config hardening and the data-directory ACL lockdown (`install.ps1` icacls).
+- That the shell stays stable during focus (the guard now never kills Windows binaries except terminals/admin tools, so clicking in Explorer no longer kills its COM/thumbnail helpers).
 
 **The step-6 live test checklist** is in `scripts/test-step6.ps1` (tests 1–3 automated; test 4, `restore.ps1`,
 manual). The README's "Setting it up for real use" and "Safety first" sections are the operational guide.
